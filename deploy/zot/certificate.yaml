@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zot-registry
+  namespace: registry
+spec:
+  secretName: zot-registry-tls
+
+  dnsNames:
+    - registry.secure-ai.local
+
+  issuerRef:
+    name: selfsigned-cluster-secure-ai
+    kind: ClusterIssuer

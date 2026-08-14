@@ -1,0 +1,59 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/project-zot/zot
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5000
+
+persistence: true
+
+pvc:
+  create: true
+  accessModes:
+    - ReadWriteOnce
+  storage: 30Gi
+  storageClassName: local-path
+
+mountConfig: true
+
+configFiles:
+  config.json: |-
+    {
+      "storage": {
+        "rootDirectory": "/var/lib/registry"
+      },
+      "http": {
+        "address": "0.0.0.0",
+        "port": "5000",
+        "auth": {
+          "failDelay": 3,
+          "htpasswd": {
+            "path": "/etc/zot/auth/htpasswd"
+          }
+        }
+      },
+      "log": {
+        "level": "info"
+      }
+    }
+
+extraVolumes:
+  - name: zot-auth
+    secret:
+      secretName: zot-auth
+
+extraVolumeMounts:
+  - name: zot-auth
+    mountPath: /etc/zot/auth
+    readOnly: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi

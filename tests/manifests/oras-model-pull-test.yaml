@@ -1,0 +1,178 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: oras-model-pull-test
+  namespace: ai-workloads
+  labels:
+    app: oras-model-pull-test
+    purpose: model-pull-validation
+
+spec:
+  # Lab uniquement :
+  # registry.secure-ai.local represents the trusted internal registry endpoint,
+  # mais n'est pas connu de CoreDNS.
+  hostAliases:
+    - ip: "192.0.2.203"
+      hostnames:
+        - "registry.secure-ai.local"
+
+  restartPolicy: Never
+
+  # Le Pod n'a pas besoin d'accéder à l'API Kubernetes.
+  automountServiceAccountToken: false
+
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  containers:
+    - name: model-puller
+
+      image: ghcr.io/oras-project/oras:v1.3.0
+      imagePullPolicy: IfNotPresent
+
+      command:
+        - /bin/sh
+        - -c
+
+      args:
+        - |
+          set -eu
+
+          echo "=== OCI MODEL PULL TEST ==="
+
+          echo "Preparing ORAS environment..."
+
+          mkdir -p "${DOCKER_CONFIG}"
+          mkdir -p "${MODEL_OUTPUT}"
+
+          echo "Authenticating..."
+
+          printf '%s' "${REGISTRY_PASSWORD}" | \
+          oras login \
+            --insecure \
+            "${REGISTRY_HOST}" \
+            --username "${REGISTRY_USERNAME}" \
+            --password-stdin
+
+          echo "Authentication OK"
+
+          echo "Pulling immutable model artifact..."
+
+          oras pull \
+            --insecure \
+            --output "${MODEL_OUTPUT}" \
+            "${MODEL_ARTIFACT_REFERENCE}"
+
+          echo "Pull completed"
+
+          echo "Checking required files..."
+
+          test -f "${MODEL_OUTPUT}/model.safetensors"
+          echo "model.safetensors OK"
+
+          test -f "${MODEL_OUTPUT}/config.json"
+          echo "config.json OK"
+
+          test -f "${MODEL_OUTPUT}/tokenizer.json"
+          echo "tokenizer.json OK"
+
+          test -f "${MODEL_OUTPUT}/trusted-manifest.json"
+          echo "trusted-manifest.json OK"
+
+          echo ""
+          echo "Downloaded model files:"
+          ls -lh "${MODEL_OUTPUT}"
+
+          echo ""
+          echo "=== TEST SUCCESS ==="
+
+      env:
+        # -----------------------------------------------------
+        # OCI registry
+        # -----------------------------------------------------
+
+        - name: REGISTRY_HOST
+          value: "registry.secure-ai.local:5000"
+
+        # -----------------------------------------------------
+        # Immutable OCI model reference
+        # -----------------------------------------------------
+
+        - name: MODEL_ARTIFACT_REFERENCE
+          value: "registry.secure-ai.local:5000/ai-models-trusted/qwen3-0.6b@sha256:0d5a6a40e734feff221f1ad1334c29dfc29c55ec1b82d3ad2149b745fd4cb363"
+
+        # -----------------------------------------------------
+        # Model destination
+        # -----------------------------------------------------
+
+        - name: MODEL_OUTPUT
+          value: "/models/model"
+
+        # -----------------------------------------------------
+        # Writable HOME for non-root ORAS
+        # -----------------------------------------------------
+
+        - name: HOME
+          value: "/tmp/oras-home"
+
+        - name: DOCKER_CONFIG
+          value: "/tmp/oras-home/.docker"
+
+        # -----------------------------------------------------
+        # Registry credentials
+        # -----------------------------------------------------
+
+        - name: REGISTRY_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: ai-model-registry-credentials
+              key: username
+
+        - name: REGISTRY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ai-model-registry-credentials
+              key: password
+
+      volumeMounts:
+        # Model artifact destination
+        - name: model-storage
+          mountPath: /models/model
+
+        # Writable ORAS configuration directory
+        - name: oras-home
+          mountPath: /tmp/oras-home
+
+      securityContext:
+        allowPrivilegeEscalation: false
+
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+
+        capabilities:
+          drop:
+            - ALL
+
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+  volumes:
+    # Temporary model storage.
+    # For this validation test only.
+    - name: model-storage
+      emptyDir:
+        sizeLimit: 5Gi
+
+    # Writable directory required by ORAS for its credentials.
+    - name: oras-home
+      emptyDir: {}

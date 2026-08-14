@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: llm-runtime
+  namespace: ai-workloads
+
+  labels:
+    app: llm-runtime
+    runtime: vllm-metal
+
+spec:
+  ports:
+    - name: http
+      port: 8000
+      protocol: TCP
+      targetPort: 8000

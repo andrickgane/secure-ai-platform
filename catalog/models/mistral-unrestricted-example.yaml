@@ -1,0 +1,26 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIModel
+metadata:
+  name: mistral-unrestricted-example
+spec:
+  displayName: Mistral unrestricted example
+  type: chat
+  provider: huggingface
+  repository: replace-with-approved-huggingface-repository
+  revision: replace-with-pinned-commit
+  license: review-required
+  capabilities:
+    - chat
+    - text-generation
+  supportedRuntimes:
+    - vllm-metal
+    - vllm-cuda
+  defaultProfile: interactive
+  security:
+    approved: false
+    allowRemoteCode: false
+    internetExposure: false
+    classification: restricted
+    requiredRoles:
+      - ai-researcher
+      - platform-admin

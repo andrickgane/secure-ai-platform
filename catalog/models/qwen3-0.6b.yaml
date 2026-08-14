@@ -1,0 +1,47 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIModel
+
+metadata:
+  name: qwen3-0.6b
+
+spec:
+  displayName: Qwen3 0.6B
+  type: chat
+  provider: huggingface
+  repository: Qwen/Qwen3-0.6B
+  revision: main
+  license: apache-2.0
+
+  capabilities:
+    - chat
+    - text-generation
+    - reasoning
+    - multilingual
+
+  supportedRuntimes:
+    - vllm-metal
+    - vllm-cuda
+
+  defaultProfile: interactive
+
+  security:
+    approved: true
+    allowRemoteCode: false
+    internetExposure: false
+    classification: standard
+
+  artifact:
+    source: oci-registry
+
+    registry: registry.secure-ai.local:5000
+
+    repository: ai-models-trusted/qwen3-0.6b
+
+    digest: sha256:0d5a6a40e734feff221f1ad1334c29dfc29c55ec1b82d3ad2149b745fd4cb363
+
+    sourceRevision: c1899de289a04d12100db370d81485cdf75e47ca
+
+    signature:
+      required: true
+      oidcIssuer: https://github.com/login/oauth
+      identity: platform-signing@example.com

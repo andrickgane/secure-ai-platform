@@ -1,0 +1,59 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIProfile
+
+metadata:
+  name: safe-enterprise
+
+spec:
+  displayName: Safe Enterprise
+
+  description: >
+    Profil conservateur destiné aux usages d'entreprise avec
+    paramètres fortement contrôlés et faible variabilité.
+
+  category: enterprise
+
+  defaults:
+    maxModelLen: 4096
+    maxTokens: 512
+    temperature: 0.0
+    topP: 0.8
+
+  limits:
+    maxModelLen: 8192
+    maxTokens: 1024
+
+    temperature:
+      min: 0.0
+      max: 0.2
+
+    topP:
+      min: 0.5
+      max: 0.9
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+  runtimePolicy:
+    allowedRuntimes:
+      - vllm-cuda
+      - vllm-metal
+
+  inference:
+    streaming: true
+
+    concurrency:
+      maxRequests: 4
+
+    timeoutSeconds: 120
+
+  security:
+    allowUserOverrides: false
+
+    overridableParameters: []

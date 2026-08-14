@@ -1,0 +1,70 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: ModelSecurityPolicy
+
+metadata:
+  name: default-model-security
+
+spec:
+  
+  secretScanning:
+    excludedGeneratedFiles:
+      - integrity-manifest.json
+      - security-attestation.json
+      - clamav-report.json
+      - yara-report.json
+      - detect-secrets-report.json
+
+    entropyExceptions:
+      - tokenizer.json
+      - vocab.json
+
+    allowedPlaceholders:
+      - EMPTY
+      - CHANGE_ME
+      - CHANGEME
+      - YOUR_API_KEY
+      - YOUR_TOKEN
+
+    allowedEnvironmentReferences:
+      - getenv
+      - environ
+  
+  source:
+    allowedProviders:
+      - huggingface
+
+    requireImmutableRevision: true
+
+  serialization:
+    preferredFormats:
+      - safetensors
+
+    forbiddenExtensions:
+      - .pkl
+      - .pickle
+      - .sh
+
+    reviewRequiredExtensions:
+      - .py
+      - .pt
+      - .pth
+      - .bin
+      - .so
+
+  remoteCode:
+    allowed: false
+
+  security:
+    malwareScanRequired: true
+    secretScanRequired: true
+    serializationScanRequired: true
+
+  integrity:
+    sha256Required: true
+
+  provenance:
+    attestationRequired: true
+    signatureRequired: true
+
+  promotion:
+    manualApprovalRequired: true

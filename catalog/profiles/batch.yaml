@@ -1,0 +1,58 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIProfile
+
+metadata:
+  name: batch
+
+spec:
+  displayName: Batch
+
+  description: >
+    Profil destiné aux traitements non interactifs où le débit
+    est prioritaire sur la latence individuelle.
+
+  category: batch
+
+  defaults:
+    maxModelLen: 8192
+    maxTokens: 1024
+    temperature: 0.2
+    topP: 0.9
+
+  limits:
+    maxModelLen: 16384
+    maxTokens: 4096
+
+    temperature:
+      min: 0.0
+      max: 0.8
+
+    topP:
+      min: 0.5
+      max: 1.0
+
+  resources:
+    requests:
+      cpu: "2"
+      memory: 4Gi
+
+    limits:
+      cpu: "8"
+      memory: 16Gi
+
+  runtimePolicy:
+    allowedRuntimes:
+      - vllm-cuda
+
+  inference:
+    streaming: false
+
+    concurrency:
+      maxRequests: 16
+
+    timeoutSeconds: 600
+
+  security:
+    allowUserOverrides: false
+
+    overridableParameters: []

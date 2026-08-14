@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+.venv-*/
+api/.venv/
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.crt
+# Kubernetes credentials
+kubeconfig
+*.kubeconfig
+# macOS
+.DS_Store
+# IDE
+.vscode/
+.idea/
+# Logs
+*.log
+logs/
+# AI model supply-chain artifacts
+artifacts/quarantine/*
+artifacts/attestations/*
+!artifacts/quarantine/.gitkeep
+!artifacts/attestations/.gitkeep
+artifacts/trusted/*
+!artifacts/trusted/.gitkeep
+# Model weights
+*.safetensors
+*.gguf
+*.pt
+*.pth
+*.pkl
+*.pickle
+deploy/zot/auth/htpasswd
+deploy/zot/tls/*.key
+deploy/zot/tls/*.crt
+*.pyo
+venv/
+# Environment / secrets
+# Local model artifacts
+artifacts/
+trusted-metadata/
+# Zot local secrets / TLS
+deploy/zot/tls/
+# Temporary files
+/tmp/
+.secrets/
+id_ed25519
+id_ed25519.*
+ui/node_modules/
+# Frontend dependencies
+# Local secrets
+gitleaks-dir-report.json
+
+# Local operational tooling
+scripts/setup-mac-ssh.sh
+scripts/cleanup-local-images.sh
+scripts/cleanup-containerd-node.sh
+scripts/cleanup-zot.sh
+scripts/install-final-v1.sh
+scripts/apply-bundle-to-repo.sh

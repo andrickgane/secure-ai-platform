@@ -1,0 +1,59 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIProfile
+
+metadata:
+  name: high-context
+
+spec:
+  displayName: High Context
+
+  description: >
+    Profil pour workloads nécessitant des contextes étendus,
+    documents longs et réponses plus volumineuses.
+
+  category: high-context
+
+  defaults:
+    maxModelLen: 32768
+    maxTokens: 4096
+    temperature: 0.2
+    topP: 0.9
+
+  limits:
+    maxModelLen: 65536
+    maxTokens: 8192
+
+    temperature:
+      min: 0.0
+      max: 0.8
+
+    topP:
+      min: 0.5
+      max: 1.0
+
+  resources:
+    requests:
+      cpu: "2"
+      memory: 8Gi
+
+    limits:
+      cpu: "8"
+      memory: 24Gi
+
+  runtimePolicy:
+    allowedRuntimes:
+      - vllm-cuda
+
+  inference:
+    streaming: true
+
+    concurrency:
+      maxRequests: 1
+
+    timeoutSeconds: 600
+
+  security:
+    allowUserOverrides: true
+
+    overridableParameters:
+      - maxTokens

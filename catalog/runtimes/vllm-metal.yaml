@@ -1,0 +1,30 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIRuntime
+metadata:
+  name: vllm-metal
+spec:
+  displayName: vLLM Metal
+  description: >
+    External vLLM inference runtime managed by the platform control plane.
+    Model governance and supply-chain operations remain centralized
+    while inference execution is isolated from the management layer.
+  deploymentMode: external
+  endpoint:
+    scheme: http
+    host: 192.0.2.20
+    port: 8000
+  management:
+    type: ssh
+    host: 192.0.2.20
+    port: 22
+  hardware:
+    accelerator: apple-metal
+    gpuCount: 0
+  capabilities:
+    - chat
+    - text-generation
+    - reasoning
+  security:
+    authentication:
+      type: bearer-token
+    internetRequired: false

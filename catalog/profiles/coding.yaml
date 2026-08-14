@@ -1,0 +1,61 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIProfile
+
+metadata:
+  name: coding
+
+spec:
+  displayName: Coding
+
+  description: >
+    Profil optimisé pour génération de code, revue, debug et assistance
+    technique avec des réponses plus déterministes.
+
+  category: coding
+
+  defaults:
+    maxModelLen: 8192
+    maxTokens: 2048
+    temperature: 0.1
+    topP: 0.85
+
+  limits:
+    maxModelLen: 16384
+    maxTokens: 4096
+
+    temperature:
+      min: 0.0
+      max: 0.5
+
+    topP:
+      min: 0.5
+      max: 1.0
+
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+
+    limits:
+      cpu: "4"
+      memory: 8Gi
+
+  runtimePolicy:
+    allowedRuntimes:
+      - vllm-metal
+      - vllm-cuda
+
+  inference:
+    streaming: true
+
+    concurrency:
+      maxRequests: 2
+
+    timeoutSeconds: 180
+
+  security:
+    allowUserOverrides: true
+
+    overridableParameters:
+      - temperature
+      - maxTokens

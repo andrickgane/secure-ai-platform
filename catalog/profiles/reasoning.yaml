@@ -1,0 +1,62 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIProfile
+
+metadata:
+  name: reasoning
+
+spec:
+  displayName: Reasoning
+
+  description: >
+    Profil pour tâches complexes nécessitant davantage de contexte,
+    de tokens de sortie et un temps d'inférence plus long.
+
+  category: reasoning
+
+  defaults:
+    maxModelLen: 16384
+    maxTokens: 4096
+    temperature: 0.3
+    topP: 0.95
+
+  limits:
+    maxModelLen: 32768
+    maxTokens: 8192
+
+    temperature:
+      min: 0.0
+      max: 1.0
+
+    topP:
+      min: 0.5
+      max: 1.0
+
+  resources:
+    requests:
+      cpu: "2"
+      memory: 4Gi
+
+    limits:
+      cpu: "6"
+      memory: 12Gi
+
+  runtimePolicy:
+    allowedRuntimes:
+      - vllm-cuda
+      - vllm-metal
+
+  inference:
+    streaming: true
+
+    concurrency:
+      maxRequests: 2
+
+    timeoutSeconds: 300
+
+  security:
+    allowUserOverrides: true
+
+    overridableParameters:
+      - temperature
+      - maxTokens
+      - topP

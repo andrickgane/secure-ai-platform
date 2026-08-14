@@ -1,0 +1,24 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "YARA rule intentionally detects private key markers"
+targetRules = ["private-key"]
+paths = [
+  '''model-ingestion/yara/rules/model_security\.yar'''
+]
+
+[[allowlists]]
+description = "Secret scanner implementation contains API key detection patterns"
+targetRules = ["generic-api-key"]
+paths = [
+  '''model-ingestion/scripts/detect_secrets_scan\.py'''
+]
+
+[[allowlists]]
+description = "Local development secrets and private keys are intentionally excluded from directory scans"
+paths = [
+  '''^\.env$''',
+  '''^\.secrets/''',
+  '''^deploy/zot/tls/registry\.key$'''
+]

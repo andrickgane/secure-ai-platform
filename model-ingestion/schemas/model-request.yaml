@@ -1,0 +1,20 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: ModelImportRequest
+
+metadata:
+  name: qwen3-0.6b
+
+spec:
+  source:
+    provider: huggingface
+    repository: Qwen/Qwen3-0.6B
+
+    # La pipeline devra résoudre cette référence
+    # vers un commit immuable.
+    revision: main
+
+  destination:
+    name: qwen3-0.6b
+
+  security:
+    allowRemoteCode: false

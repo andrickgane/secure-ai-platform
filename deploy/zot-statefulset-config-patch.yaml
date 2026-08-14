@@ -1,0 +1,14 @@
+spec:
+  template:
+    spec:
+      volumes:
+        - name: zot-config
+          configMap:
+            name: zot-config
+      containers:
+        - name: zot
+          volumeMounts:
+            - name: zot-config
+              mountPath: /etc/zot/config.json
+              subPath: config.json
+              readOnly: true

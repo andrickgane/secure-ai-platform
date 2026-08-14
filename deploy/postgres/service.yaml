@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: postgres
+  namespace: ai-system
+
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app.kubernetes.io/name: postgres
+
+  ports:
+    - name: postgres
+      protocol: TCP
+      port: 5432
+      targetPort: 5432

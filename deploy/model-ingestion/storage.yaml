@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: model-ingestion-workspace
+  namespace: ai-workloads
+
+  labels:
+    app.kubernetes.io/name: model-ingestion
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  storageClassName: local-path
+
+  accessModes:
+    - ReadWriteOnce
+
+  resources:
+    requests:
+      storage: 100Gi
