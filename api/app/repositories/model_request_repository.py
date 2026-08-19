@@ -40,6 +40,8 @@ class ModelRequestRepository:
         revision: str,
         requested_profile: str | None,
         purpose: str | None,
+        artifact_patterns: list[str],
+        download_complete_repository: bool,
         requested_by_user_id: int,
     ) -> ModelRequest:
 
@@ -55,6 +57,14 @@ class ModelRequestRepository:
             ),
 
             purpose=purpose,
+
+            artifact_patterns=(
+                artifact_patterns
+            ),
+
+            download_complete_repository=(
+                download_complete_repository
+            ),
 
             status="pending",
 

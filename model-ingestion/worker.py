@@ -150,6 +150,9 @@ def update_request(
     status: str,
     message: str,
     revision: str | None = None,
+    artifact_format: str | None = None,
+    architecture: str | None = None,
+    quantization: str | None = None,
 ) -> None:
 
     values: dict[str, Any] = {
@@ -161,23 +164,33 @@ def update_request(
         ),
     }
 
-    revision_sql = ""
+    assignments = [
+        "status = :status",
+        "status_message = :message",
+        "updated_at = :updated_at",
+    ]
 
-    if revision is not None:
-        revision_sql = (
-            ", revision = :revision"
-        )
+    optional_values = {
+        "revision": revision,
+        "artifact_format": artifact_format,
+        "architecture": architecture,
+        "quantization": quantization,
+    }
 
-        values["revision"] = revision
+    for column, value in (
+        optional_values.items()
+    ):
+        if value is not None:
+            assignments.append(
+                f"{column} = :{column}"
+            )
+            values[column] = value
 
     statement = text(
         f"""
         UPDATE model_requests
         SET
-            status = :status,
-            status_message = :message,
-            updated_at = :updated_at
-            {revision_sql}
+            {", ".join(assignments)}
         WHERE id = :request_id
         """
     )
@@ -224,25 +237,140 @@ def sha256_file(
     return digest.hexdigest()
 
 
-def scan_filesystem() -> dict[str, Any]:
+def detect_architecture(
+    files: list[dict[str, Any]],
+) -> str | None:
+    """
+    Detect the model architecture from config.json when
+    available, with repository-name fallback for GGUF repos.
+    """
 
+    config_path = (
+        QUARANTINE_DIR
+        / "config.json"
+    )
+
+    if config_path.is_file():
+        try:
+            config = json.loads(
+                config_path.read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            architectures = config.get(
+                "architectures"
+            )
+
+            if (
+                isinstance(architectures, list)
+                and architectures
+            ):
+                value = str(
+                    architectures[0]
+                ).strip()
+
+                if value:
+                    return value
+
+            model_type = config.get(
+                "model_type"
+            )
+
+            if isinstance(
+                model_type,
+                str,
+            ) and model_type.strip():
+                return model_type.strip()
+
+        except (
+            OSError,
+            json.JSONDecodeError,
+        ):
+            pass
+
+    source = REPOSITORY.lower()
+
+    architecture_hints = {
+        "gemma": "gemma",
+        "mistral": "mistral",
+        "mixtral": "mixtral",
+        "qwen": "qwen",
+        "llama": "llama",
+        "deepseek": "deepseek",
+        "phi": "phi",
+    }
+
+    for hint, architecture in (
+        architecture_hints.items()
+    ):
+        if hint in source:
+            return architecture
+
+    return None
+
+
+def detect_quantization(
+    gguf_files: list[str],
+) -> str | None:
+    """
+    Extract common GGUF quantization names from filenames.
+
+    Examples:
+        Q4_K_M
+        Q5_K_M
+        Q8_0
+        IQ3_M
+    """
+
+    if not gguf_files:
+        return None
+
+    import re
+
+    patterns = [
+        r"(Q[2-8]_K_[SML])",
+        r"(Q[2-8]_K)",
+        r"(Q[2-8]_[0-9])",
+        r"(IQ[1-4]_[A-Z0-9]+)",
+        r"(BF16)",
+        r"(F16)",
+        r"(F32)",
+    ]
+
+    for filename in gguf_files:
+        upper = filename.upper()
+
+        for pattern in patterns:
+            match = re.search(
+                pattern,
+                upper,
+            )
+
+            if match:
+                return match.group(1)
+
+    return None
+
+
+def scan_filesystem() -> dict[str, Any]:
     files: list[dict[str, Any]] = []
 
     forbidden: list[str] = []
 
     safetensors: list[str] = []
 
+    gguf: list[str] = []
+
     total_size = 0
 
     for path in sorted(
         QUARANTINE_DIR.rglob("*")
     ):
-
         if not path.is_file():
             continue
 
         # Ignore Hugging Face download metadata.
-
         if ".cache" in path.parts:
             continue
 
@@ -251,7 +379,6 @@ def scan_filesystem() -> dict[str, Any]:
         )
 
         size = path.stat().st_size
-
         total_size += size
 
         suffix = path.suffix.lower()
@@ -261,20 +388,21 @@ def scan_filesystem() -> dict[str, Any]:
                 str(relative)
             )
 
-        if suffix == REQUIRED_WEIGHT_SUFFIX:
+        if suffix == ".safetensors":
             safetensors.append(
+                str(relative)
+            )
+
+        if suffix == ".gguf":
+            gguf.append(
                 str(relative)
             )
 
         files.append(
             {
                 "path": str(relative),
-
                 "size": size,
-
-                "sha256": (
-                    sha256_file(path)
-                ),
+                "sha256": sha256_file(path),
             }
         )
 
@@ -298,12 +426,6 @@ def scan_filesystem() -> dict[str, Any]:
             "contains no files"
         )
 
-    if not safetensors:
-        raise RuntimeError(
-            "No Safetensors weights "
-            "were found"
-        )
-
     if forbidden:
         raise RuntimeError(
             "Forbidden or unsafe files "
@@ -313,18 +435,41 @@ def scan_filesystem() -> dict[str, Any]:
             )
         )
 
+    if safetensors and gguf:
+        artifact_format = "mixed"
+
+    elif safetensors:
+        artifact_format = "safetensors"
+
+    elif gguf:
+        artifact_format = "gguf"
+
+    else:
+        raise RuntimeError(
+            "No supported model weights were found. "
+            "Expected Safetensors or GGUF artifacts."
+        )
+
+    architecture = detect_architecture(
+        files
+    )
+
+    quantization = detect_quantization(
+        gguf
+    )
+
     return {
         "file_count": len(files),
-
         "total_bytes": total_size,
-
-        "safetensors": (
-            safetensors
+        "artifact_format": (
+            artifact_format
         ),
-
+        "architecture": architecture,
+        "quantization": quantization,
+        "safetensors": safetensors,
+        "gguf": gguf,
         "files": files,
     }
-
 
 def run_gitleaks() -> dict[str, Any]:
 
@@ -522,6 +667,59 @@ def main() -> int:
             ),
         )
 
+        raw_artifact_patterns = (
+            os.getenv(
+                "MODEL_ARTIFACT_PATTERNS",
+                "",
+            )
+            .strip()
+        )
+
+        artifact_patterns = [
+            pattern.strip()
+            for pattern in raw_artifact_patterns.splitlines()
+            if pattern.strip()
+        ]
+
+        allow_full_snapshot = (
+            os.getenv(
+                "MODEL_ALLOW_FULL_SNAPSHOT",
+                "false",
+            )
+            .strip()
+            .lower()
+            in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }
+        )
+
+        if (
+            not artifact_patterns
+            and not allow_full_snapshot
+        ):
+            raise RuntimeError(
+                "Model ingestion denied: no artifact "
+                "patterns were supplied and complete "
+                "repository download was not explicitly "
+                "authorized."
+            )
+
+        if artifact_patterns:
+            print(
+                "Selective model ingestion enabled. "
+                f"Patterns: {artifact_patterns}",
+                flush=True,
+            )
+        else:
+            print(
+                "Complete repository ingestion explicitly "
+                "authorized.",
+                flush=True,
+            )
+
         snapshot_download(
             repo_id=REPOSITORY,
 
@@ -534,6 +732,12 @@ def main() -> int:
             ),
 
             token=HF_TOKEN,
+
+            allow_patterns=(
+                artifact_patterns
+                if artifact_patterns
+                else None
+            ),
         )
 
 
@@ -588,6 +792,24 @@ def main() -> int:
                 filesystem_report
             ),
 
+            "model_metadata": {
+                "artifact_format": (
+                    filesystem_report.get(
+                        "artifact_format"
+                    )
+                ),
+                "architecture": (
+                    filesystem_report.get(
+                        "architecture"
+                    )
+                ),
+                "quantization": (
+                    filesystem_report.get(
+                        "quantization"
+                    )
+                ),
+            },
+
             "gitleaks": (
                 gitleaks_report
             ),
@@ -611,10 +833,33 @@ def main() -> int:
                 resolved_revision
             ),
 
+            artifact_format=(
+                filesystem_report.get(
+                    "artifact_format"
+                )
+            ),
+
+            architecture=(
+                filesystem_report.get(
+                    "architecture"
+                )
+            ),
+
+            quantization=(
+                filesystem_report.get(
+                    "quantization"
+                )
+            ),
+
             message=(
-                "Quarantine security "
-                "gate passed; model is "
-                "ready for trusted "
+                "Quarantine security gate passed; "
+                f"detected format="
+                f"{filesystem_report.get('artifact_format')}, "
+                f"architecture="
+                f"{filesystem_report.get('architecture')}, "
+                f"quantization="
+                f"{filesystem_report.get('quantization')}; "
+                "model is ready for trusted "
                 "OCI promotion"
             ),
         )

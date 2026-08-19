@@ -1,0 +1,59 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIRuntime
+
+metadata:
+  name: llama-cpp-metal
+
+spec:
+  displayName: llama.cpp Metal
+
+  description: >
+    External llama.cpp inference runtime optimized for GGUF models
+    on Apple Silicon. The runtime is managed by the AI Control Plane
+    while trusted model artifacts remain governed by the centralized
+    AI supply chain.
+
+  engine: llama-cpp
+
+  artifactFormats:
+    - gguf
+
+  compatibility:
+    artifactFormats:
+      - gguf
+
+    quantizations:
+      - Q2_K
+      - Q3_K_M
+      - Q4_K_M
+      - Q5_K_M
+      - Q6_K
+      - Q8_0
+      - F16
+      - F32
+
+  deploymentMode: external
+
+  endpoint:
+    scheme: http
+    host: llm-runtime.ai-workloads.svc.cluster.local
+    port: 8081
+
+  management:
+    type: ssh
+    host: 192.168.64.1
+    port: 22
+
+  hardware:
+    accelerator: apple-metal
+    gpuCount: 0
+
+  capabilities:
+    - chat
+    - text-generation
+
+  security:
+    authentication:
+      type: bearer-token
+
+    internetRequired: false

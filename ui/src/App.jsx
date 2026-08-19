@@ -55,7 +55,7 @@ const navigation = [
   },
   {
     id: "chat",
-    label: "Playground",
+    label: "AI Workspace",
     icon: FiMessageSquare,
   },
   {

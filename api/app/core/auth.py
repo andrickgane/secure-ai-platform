@@ -25,6 +25,20 @@ bearer_scheme = HTTPBearer(
 )
 
 
+def _authentication_error(
+    detail: str,
+) -> HTTPException:
+    return HTTPException(
+        status_code=(
+            status.HTTP_401_UNAUTHORIZED
+        ),
+        detail=detail,
+        headers={
+            "WWW-Authenticate": "Bearer",
+        },
+    )
+
+
 def get_current_user(
     credentials: (
         HTTPAuthorizationCredentials
@@ -43,13 +57,8 @@ def get_current_user(
 ) -> User:
 
     if credentials is None:
-        raise HTTPException(
-            status_code=(
-                status.HTTP_401_UNAUTHORIZED
-            ),
-            detail=(
-                "Authentication required"
-            ),
+        raise _authentication_error(
+            "Authentication required"
         )
 
     token = credentials.credentials
@@ -58,43 +67,60 @@ def get_current_user(
         payload = jwt.decode(
             token,
             settings.jwt_secret_key,
+
             algorithms=[
                 settings.jwt_algorithm
             ],
+
+            audience=(
+                settings.jwt_audience
+            ),
+
+            issuer=(
+                settings.jwt_issuer
+            ),
+
+            leeway=(
+                settings.jwt_leeway_seconds
+            ),
+
+            options={
+                "require": [
+                    "sub",
+                    "iat",
+                    "exp",
+                    "iss",
+                    "aud",
+                    "type",
+                ],
+            },
         )
 
     except jwt.ExpiredSignatureError as exc:
-
-        raise HTTPException(
-            status_code=(
-                status.HTTP_401_UNAUTHORIZED
-            ),
-            detail=(
-                "Access token expired"
-            ),
+        raise _authentication_error(
+            "Access token expired"
         ) from exc
 
     except jwt.InvalidTokenError as exc:
-
-        raise HTTPException(
-            status_code=(
-                status.HTTP_401_UNAUTHORIZED
-            ),
-            detail=(
-                "Invalid access token"
-            ),
+        raise _authentication_error(
+            "Invalid access token"
         ) from exc
+
+    if (
+        payload.get("type")
+        != "access"
+    ):
+        raise _authentication_error(
+            "Invalid token type"
+        )
 
     user_id = payload.get(
         "sub"
     )
 
     if user_id is None:
-        raise HTTPException(
-            status_code=401,
-            detail=(
-                "Invalid access token"
-            ),
+        raise _authentication_error(
+            "Invalid access token"
         )
 
     try:
@@ -102,12 +128,12 @@ def get_current_user(
             user_id
         )
 
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=401,
-            detail=(
-                "Invalid access token"
-            ),
+    except (
+        TypeError,
+        ValueError,
+    ) as exc:
+        raise _authentication_error(
+            "Invalid access token"
         ) from exc
 
     user = db.get(
@@ -115,15 +141,14 @@ def get_current_user(
         user_id_int,
     )
 
-    if (
-        user is None
-        or not user.is_active
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail=(
-                "User is not active"
-            ),
+    if user is None:
+        raise _authentication_error(
+            "User does not exist"
+        )
+
+    if not user.is_active:
+        raise _authentication_error(
+            "User is not active"
         )
 
     return user

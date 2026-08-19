@@ -132,6 +132,8 @@ class ModelIngestionService:
         provider: str,
         repository: str,
         revision: str,
+        artifact_patterns: list[str] | None = None,
+        allow_full_snapshot: bool = False,
     ) -> dict[str, Any]:
 
         job_name = self._job_name(
@@ -145,7 +147,7 @@ class ModelIngestionService:
             service_account_name=(
                 "model-ingestion"
             ),
-
+            automount_service_account_token=False,
             image_pull_secrets=[
                 client.V1LocalObjectReference(
                     name=(
@@ -209,6 +211,26 @@ class ModelIngestionService:
 
                         client.V1EnvVar(
                             name=(
+                                "MODEL_ARTIFACT_PATTERNS"
+                            ),
+                            value="\n".join(
+                                artifact_patterns or []
+                            ),
+                        ),
+
+                        client.V1EnvVar(
+                            name=(
+                                "MODEL_ALLOW_FULL_SNAPSHOT"
+                            ),
+                            value=(
+                                "true"
+                                if allow_full_snapshot
+                                else "false"
+                            ),
+                        ),
+
+                        client.V1EnvVar(
+                            name=(
                                 "MODEL_MAX_TOTAL_BYTES"
                             ),
                             value=str(
@@ -243,12 +265,12 @@ class ModelIngestionService:
                         .V1ResourceRequirements(
                             requests={
                                 "cpu": "500m",
-                                "memory": "1Gi",
+                                "memory": "2Gi",
                             },
 
                             limits={
                                 "cpu": "2",
-                                "memory": "4Gi",
+                                "memory": "8Gi",
                             },
                         )
                     ),

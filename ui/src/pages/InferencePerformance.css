@@ -1,0 +1,169 @@
+.aiw-performance {
+  margin-top: 14px;
+
+  padding: 14px;
+
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+
+  background: #fcfcfd;
+}
+
+
+.aiw-performance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 12px;
+}
+
+
+.aiw-performance-header > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: #344054;
+}
+
+
+.aiw-performance-header strong {
+  font-size: 11px;
+}
+
+
+.aiw-performance-header > span {
+  padding: 4px 7px;
+
+  border-radius: 999px;
+
+  background: #f2f4f7;
+
+  color: #475467;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+
+  font-size: 9px;
+}
+
+
+.aiw-performance-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 8px;
+}
+
+
+.aiw-perf-metric {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 10px;
+
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+
+  background: #ffffff;
+}
+
+
+.aiw-perf-icon {
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 7px;
+
+  background: #f2f4f7;
+
+  color: #475467;
+}
+
+
+.aiw-perf-metric > div:last-child {
+  min-width: 0;
+}
+
+
+.aiw-perf-metric span {
+  display: block;
+
+  color: #667085;
+
+  font-size: 9px;
+  font-weight: 600;
+}
+
+
+.aiw-perf-metric strong {
+  display: block;
+
+  margin-top: 2px;
+
+  overflow: hidden;
+
+  color: #101828;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+
+  font-size: 12px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.aiw-perf-metric small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #98a2b3;
+
+  font-size: 8px;
+}
+
+
+@media (
+  max-width: 1000px
+) {
+  .aiw-performance-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+@media (
+  max-width: 650px
+) {
+  .aiw-performance-grid {
+    grid-template-columns:
+      1fr;
+  }
+}

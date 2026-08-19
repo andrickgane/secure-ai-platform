@@ -79,8 +79,29 @@ test -f "$MODEL_TAR"
 test -f "$REPORT"
 tar -tf "$MODEL_TAR" >/dev/null
 tar -xf "$MODEL_TAR" -C "$MODEL_OUTPUT"
-test -f "$MODEL_OUTPUT/config.json"
-test -n "$(find "$MODEL_OUTPUT" -type f -name '*.safetensors' -print -quit)"
+
+SAFETENSORS_FILE="$(
+  find "$MODEL_OUTPUT"     -type f     -name '*.safetensors'     -print -quit
+)"
+
+GGUF_FILE="$(
+  find "$MODEL_OUTPUT"     -type f     -name '*.gguf'     -print -quit
+)"
+
+if [ -z "$SAFETENSORS_FILE" ] && [ -z "$GGUF_FILE" ]; then
+  echo "No supported model weights found after OCI extraction" >&2
+  exit 1
+fi
+
+if [ -n "$SAFETENSORS_FILE" ]; then
+  test -f "$MODEL_OUTPUT/config.json"
+  echo "Detected Safetensors OCI model"
+fi
+
+if [ -n "$GGUF_FILE" ]; then
+  echo "Detected GGUF OCI model: $GGUF_FILE"
+fi
+
 rm -f "$MODEL_TAR"
 """
         def from_secret(env_name: str, key: str) -> client.V1EnvVar:
@@ -96,8 +117,8 @@ rm -f "$MODEL_TAR"
         return client.V1Container(
             name="model-puller",
             image=(
-                "registry.secure-ai.local:5000/"
-                "ai-platform/model-promotion:v1.0.3"
+                "registry.andrick.local:31039/"
+                "ai-platform/model-promotion:v2.1.0-dev.4"
             ),
             image_pull_policy="IfNotPresent",
             command=["/bin/sh", "-c"],
@@ -232,6 +253,7 @@ rm -f "$MODEL_TAR"
             init_containers=[puller],
             containers=[runtime],
             restart_policy="Always",
+            service_account_name="ai-runtime",
             automount_service_account_token=False,
             node_selector=node_selector or {},
             volumes=[

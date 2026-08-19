@@ -1,0 +1,291 @@
+# ==========================================================
+# PLATEFORM AI
+# AI-SYSTEM NETWORK SECURITY
+# ==========================================================
+
+# ==========================================================
+# CONTROL PLANE
+# ==========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: ai-control-plane
+  namespace: ai-system
+
+  labels:
+    app.kubernetes.io/name: ai-control-plane
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ai-control-plane
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  # ========================================================
+  # INGRESS
+  # ========================================================
+
+  ingress:
+
+    # ------------------------------------------------------
+    # Public API traffic must arrive through ingress-nginx.
+    # ------------------------------------------------------
+
+    - from:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/component: controller
+
+      ports:
+        - protocol: TCP
+          port: 8080
+
+    # ------------------------------------------------------
+    # Runtime activation callback.
+    #
+    # Only runtime-activation Jobs from ai-workloads may
+    # directly reach the internal callback endpoint.
+    # ------------------------------------------------------
+
+    - from:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-workloads
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: runtime-activation
+
+      ports:
+        - protocol: TCP
+          port: 8080
+
+  # ========================================================
+  # EGRESS
+  # ========================================================
+
+  egress:
+
+    # ------------------------------------------------------
+    # Kubernetes DNS
+    # ------------------------------------------------------
+
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+
+      ports:
+        - protocol: UDP
+          port: 53
+
+        - protocol: TCP
+          port: 53
+
+    # ------------------------------------------------------
+    # PostgreSQL
+    # ------------------------------------------------------
+
+    - to:
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # ------------------------------------------------------
+    # Kubernetes API Service
+    # ------------------------------------------------------
+
+    - to:
+
+        - ipBlock:
+            cidr: 10.96.0.1/32
+
+      ports:
+        - protocol: TCP
+          port: 443
+
+    # ------------------------------------------------------
+    # Kubernetes API server endpoint
+    #
+    # Needed by some CNI implementations after kube-proxy
+    # DNAT of kubernetes.default.svc.
+    # ------------------------------------------------------
+
+    - to:
+
+        - ipBlock:
+            cidr: 192.168.64.12/32
+
+      ports:
+        - protocol: TCP
+          port: 6443
+
+    # ------------------------------------------------------
+    # Kubernetes managed inference runtimes
+    #
+    # KubernetesService currently labels runtime Pods with:
+    #
+    #   managed-by=ai-control-plane
+    #
+    # ------------------------------------------------------
+
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-workloads
+
+          podSelector:
+            matchLabels:
+              managed-by: ai-control-plane
+
+      ports:
+        - protocol: TCP
+          port: 8000
+
+        - protocol: TCP
+          port: 8081
+
+    # ------------------------------------------------------
+    # External Metal runtime on the Mac host.
+    #
+    # Current Plateform AI architecture:
+    #
+    # 192.168.64.1:8000 -> vLLM Metal
+    # 192.168.64.1:8081 -> llama.cpp Metal
+    # ------------------------------------------------------
+
+    - to:
+
+        - ipBlock:
+            cidr: 192.168.64.1/32
+
+      ports:
+        - protocol: TCP
+          port: 8000
+
+        - protocol: TCP
+          port: 8081
+
+    # ------------------------------------------------------
+    # Trusted registry exposed to the lab LAN.
+    #
+    # Restrict access to the lab subnet and registry port.
+    # ------------------------------------------------------
+
+    - to:
+
+        - ipBlock:
+            cidr: 192.168.64.0/24
+
+      ports:
+        - protocol: TCP
+          port: 31039
+
+---
+
+# ==========================================================
+# POSTGRESQL
+# ==========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: postgres-ingress
+  namespace: ai-system
+
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+
+    # ------------------------------------------------------
+    # Control Plane + database migration initContainer.
+    # ------------------------------------------------------
+
+    - from:
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ai-control-plane
+
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # ------------------------------------------------------
+    # Model ingestion worker.
+    #
+    # It updates model_requests in PostgreSQL.
+    # ------------------------------------------------------
+
+    - from:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-workloads
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: model-ingestion
+
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # ------------------------------------------------------
+    # Model promotion worker.
+    #
+    # It also updates model_requests in PostgreSQL.
+    # ------------------------------------------------------
+
+    - from:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-workloads
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: model-promotion
+
+      ports:
+        - protocol: TCP
+          port: 5432

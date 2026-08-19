@@ -60,16 +60,36 @@ class RuntimeActivationService:
                 "model-ingestion-secrets",
                 "ACP_REGISTRY_PASSWORD",
             ),
-            secret_env("RUNTIME_SSH_USER", "runtime-activation-config", "RUNTIME_SSH_USER"),
-            secret_env("RUNTIME_SSH_HOST", "runtime-activation-config", "RUNTIME_SSH_HOST"),
-            secret_env("RUNTIME_SSH_PORT", "runtime-activation-config", "RUNTIME_SSH_PORT"),
+            secret_env("RUNTIME_SSH_USER", "runtime-activation-config", "MAC_SSH_USER"),
+            secret_env("RUNTIME_SSH_HOST", "runtime-activation-config", "MAC_SSH_HOST"),
+            secret_env("RUNTIME_SSH_PORT", "runtime-activation-config", "MAC_SSH_PORT"),
             secret_env("VLLM_BIN", "runtime-activation-config", "VLLM_BIN"),
+            secret_env(
+                "LLAMA_CPP_BIN",
+                "runtime-activation-config",
+                "LLAMA_CPP_BIN",
+            ),
             secret_env(
                 "REMOTE_MODELS_ROOT",
                 "runtime-activation-config",
                 "REMOTE_MODELS_ROOT",
             ),
             secret_env("VLLM_API_KEY", "runtime-activation-config", "VLLM_API_KEY"),
+            secret_env(
+                "LLAMA_CPP_API_KEY",
+                "runtime-activation-config",
+                "LLAMA_CPP_API_KEY",
+            ),
+            secret_env(
+                "LEGACY_MODEL_ARTIFACT_TYPE",
+                "runtime-activation-config",
+                "LEGACY_MODEL_ARTIFACT_TYPE",
+            ),
+            secret_env(
+                "LEGACY_MODEL_LAYER_TYPE",
+                "runtime-activation-config",
+                "LEGACY_MODEL_LAYER_TYPE",
+            ),
             secret_env(
                 "CALLBACK_TOKEN",
                 "runtime-callback-secret",
@@ -126,7 +146,7 @@ class RuntimeActivationService:
         )
 
         pod = client.V1PodSpec(
-            service_account_name="model-ingestion",
+            service_account_name="runtime-activation",
             restart_policy="Never",
             automount_service_account_token=False,
             containers=[container],
@@ -228,7 +248,7 @@ class RuntimeActivationService:
         }
         job = self._job(
             generate_name="runtime-deactivate-",
-            command="/usr/local/bin/deactivate-vllm",
+            command="/usr/local/bin/deactivate-runtime",
             env=[client.V1EnvVar(name="MODEL_ID", value=model_id)],
             labels=labels,
         )

@@ -32,6 +32,14 @@ DeploymentMode = Literal[
 ]
 
 
+RuntimeCapacity = Literal[
+    4096,
+    8192,
+    16384,
+    32768,
+]
+
+
 # ==========================================================
 # DEPLOYMENT REQUEST
 # ==========================================================
@@ -41,14 +49,11 @@ class DeploymentCreate(BaseModel):
     """
     User request for an AI model deployment.
 
-    The user selects:
-    - deployment name
-    - model
-    - profile
-    - runtime preference
-
     Runtime "auto" lets the Control Plane select
     the best currently available compatible runtime.
+
+    runtime_capacity=None means:
+    use the profile default maxModelLen.
     """
 
     name: str = Field(
@@ -76,6 +81,10 @@ class DeploymentCreate(BaseModel):
         min_length=1,
     )
 
+    runtime_capacity: (
+        RuntimeCapacity | None
+    ) = None
+
 
 # ==========================================================
 # RESOLVED DEPLOYMENT CONTEXT
@@ -90,9 +99,10 @@ class DeploymentContext(BaseModel):
 
     - catalog validation
     - model approval validation
+    - profile policy resolution
+    - runtime capacity resolution
     - runtime selection
     - trusted artifact resolution
-    - compute/profile resolution
 
     It must never contain user-controlled artifact
     references that have not passed platform validation.
@@ -155,28 +165,6 @@ class DeploymentContext(BaseModel):
 
 
 class DeploymentRecord(BaseModel):
-    """
-    Deployment representation returned by the API.
-
-    The status values represent the complete V1 lifecycle:
-
-        planned
-            ↓
-        validated
-            ↓
-        deploying
-            ↓
-        ready / deployed
-
-    A previously active external runtime may transition to:
-
-        stopped
-
-    Any orchestration failure transitions to:
-
-        failed
-    """
-
     model_config = ConfigDict(
         from_attributes=True
     )

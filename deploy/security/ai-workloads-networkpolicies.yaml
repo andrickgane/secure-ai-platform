@@ -1,0 +1,439 @@
+# ==========================================================
+# PLATEFORM AI
+# AI-WORKLOADS NETWORK SECURITY
+# ==========================================================
+
+
+# ==========================================================
+# MODEL INGESTION
+#
+# Allowed:
+# - Kubernetes DNS
+# - PostgreSQL
+# - external HTTPS model providers
+#
+# Denied:
+# - inbound traffic
+# - internal Zot
+# - Control Plane
+# - Internet non-HTTPS traffic
+# ==========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: model-ingestion-egress
+  namespace: ai-workloads
+
+  labels:
+    app.kubernetes.io/name: model-ingestion
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: model-ingestion
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+
+  egress:
+
+    # Kubernetes DNS
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+
+      ports:
+
+        - protocol: UDP
+          port: 53
+
+        - protocol: TCP
+          port: 53
+
+    # PostgreSQL
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-system
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+
+      ports:
+
+        - protocol: TCP
+          port: 5432
+
+    # HTTPS model providers
+    #
+    # P1 limitation:
+    # Kubernetes NetworkPolicy does not provide portable
+    # FQDN allow-listing.
+    #
+    # Future hardening:
+    # controlled egress gateway / proxy.
+    - to:
+
+        - ipBlock:
+            cidr: 0.0.0.0/0
+
+      ports:
+
+        - protocol: TCP
+          port: 443
+
+---
+
+# ==========================================================
+# MODEL PROMOTION
+#
+# Allowed:
+# - Kubernetes DNS
+# - PostgreSQL
+# - internal Zot
+#
+# No general Internet access.
+# ==========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: model-promotion-egress
+  namespace: ai-workloads
+
+  labels:
+    app.kubernetes.io/name: model-promotion
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: model-promotion
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+
+  egress:
+
+    # Kubernetes DNS
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+
+      ports:
+
+        - protocol: UDP
+          port: 53
+
+        - protocol: TCP
+          port: 53
+
+    # PostgreSQL
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-system
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+
+      ports:
+
+        - protocol: TCP
+          port: 5432
+
+    # Internal Zot
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: registry
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: zot
+
+      ports:
+
+        - protocol: TCP
+          port: 5000
+
+---
+
+# ==========================================================
+# RUNTIME ACTIVATION
+#
+# Allowed:
+# - Kubernetes DNS
+# - internal Zot
+# - internal Control Plane callback
+# - external Metal host
+#
+# No general Internet access.
+# ==========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: runtime-activation-egress
+  namespace: ai-workloads
+
+  labels:
+    app.kubernetes.io/name: runtime-activation
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: runtime-activation
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+
+  egress:
+
+    # Kubernetes DNS
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+
+      ports:
+
+        - protocol: UDP
+          port: 53
+
+        - protocol: TCP
+          port: 53
+
+    # Internal Zot
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: registry
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: zot
+
+      ports:
+
+        - protocol: TCP
+          port: 5000
+
+    # Internal Control Plane callback
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-system
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ai-control-plane
+
+      ports:
+
+        - protocol: TCP
+          port: 8080
+
+    # External Metal runtime host
+    - to:
+
+        - ipBlock:
+            cidr: 192.168.64.1/32
+
+      ports:
+
+        - protocol: TCP
+          port: 22
+
+        - protocol: TCP
+          port: 8000
+
+        - protocol: TCP
+          port: 8081
+
+---
+
+# ==========================================================
+# AI RUNTIME - DEFAULT DENY
+# ==========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: ai-runtime-default-deny
+  namespace: ai-workloads
+
+  labels:
+    app.kubernetes.io/name: ai-runtime
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  podSelector:
+    matchLabels:
+      managed-by: ai-control-plane
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+  egress: []
+
+---
+
+# ==========================================================
+# AI RUNTIME - CONTROL PLANE INGRESS
+# ==========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: ai-runtime-allow-control-plane
+  namespace: ai-workloads
+
+  labels:
+    app.kubernetes.io/name: ai-runtime
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  podSelector:
+    matchLabels:
+      managed-by: ai-control-plane
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+
+    - from:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-system
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ai-control-plane
+
+      ports:
+
+        - protocol: TCP
+          port: 8000
+
+        - protocol: TCP
+          port: 8081
+
+---
+
+# ==========================================================
+# AI RUNTIME - EGRESS ALLOW LIST
+# ==========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: ai-runtime-allow-egress
+  namespace: ai-workloads
+
+  labels:
+    app.kubernetes.io/name: ai-runtime
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+
+  podSelector:
+    matchLabels:
+      managed-by: ai-control-plane
+
+  policyTypes:
+    - Egress
+
+  egress:
+
+    # Kubernetes DNS
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+
+      ports:
+
+        - protocol: UDP
+          port: 53
+
+        - protocol: TCP
+          port: 53
+
+    # Internal Zot model registry
+    - to:
+
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: registry
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: zot
+
+      ports:
+
+        - protocol: TCP
+          port: 5000

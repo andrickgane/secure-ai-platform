@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from datetime import (
     datetime,
     timedelta,
@@ -39,6 +40,8 @@ class AuthService:
         jwt_secret_key: str,
         jwt_algorithm: str,
         access_token_minutes: int,
+        jwt_issuer: str,
+        jwt_audience: str,
     ) -> None:
 
         self.db = db
@@ -53,6 +56,14 @@ class AuthService:
 
         self.access_token_minutes = (
             access_token_minutes
+        )
+
+        self.jwt_issuer = (
+            jwt_issuer
+        )
+
+        self.jwt_audience = (
+            jwt_audience
         )
 
         self.password_hash = (
@@ -119,7 +130,6 @@ class AuthService:
             self.db.commit()
 
         except IntegrityError as exc:
-
             self.db.rollback()
 
             raise UserAlreadyExists(
@@ -220,6 +230,22 @@ class AuthService:
 
             "role": (
                 user.role
+            ),
+
+            "type": "access",
+
+            "iss": (
+                self.jwt_issuer
+            ),
+
+            "aud": (
+                self.jwt_audience
+            ),
+
+            "jti": (
+                secrets.token_urlsafe(
+                    24
+                )
             ),
 
             "iat": int(

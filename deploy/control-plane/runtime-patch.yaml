@@ -11,7 +11,7 @@ spec:
             - name: ACP_COSIGN_PUBLIC_KEY
               value: /etc/ai-platform/cosign/cosign.pub
             - name: ACP_RUNTIME_ACTIVATION_IMAGE
-              value: registry.secure-ai.local:5000/ai-platform/runtime-activation:v1.0.0
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.4
             - name: ACP_RUNTIME_CALLBACK_TOKEN
               valueFrom:
                 secretKeyRef:
