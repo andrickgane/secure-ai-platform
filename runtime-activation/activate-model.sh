@@ -153,6 +153,12 @@ SCP=(
 
 "${SSH[@]}" true
 
+# The isolated runtime host performs extraction with the
+# hardened extractor. Python 3 is required on the runtime
+# host and is already part of the Metal runtime environment.
+"${SSH[@]}" \
+  'command -v python3 >/dev/null 2>&1'
+
 
 # ==========================================================
 # TRUST VERIFICATION
@@ -245,6 +251,15 @@ REMOTE_STATE_DIR="${REMOTE_HOME}/.local/state/ai-platform"
 "${SSH[@]}" \
   "mkdir -p '${REMOTE_MODEL_DIR}' '${REMOTE_STATE_DIR}'"
 
+REMOTE_EXTRACTOR="${REMOTE_STATE_DIR}/secure_extract.py"
+
+"${SCP[@]}" \
+  /usr/local/lib/ai-platform/secure_extract.py \
+  "${RUNTIME_SSH_USER}@${RUNTIME_SSH_HOST}:${REMOTE_EXTRACTOR}"
+
+"${SSH[@]}" \
+  "chmod 0700 '${REMOTE_EXTRACTOR}'"
+
 REMOTE_MARKER="$(
   "${SSH[@]}" \
     "cat '${REMOTE_VERSION_DIR}/.artifact-digest' 2>/dev/null || true"
@@ -305,10 +320,11 @@ if [[ "${READY_CACHE}" != "1" ]]; then
   # The activation pod never stores the complete model tar.
 
   curl -fsS \
+    --retry 3 \
     -u "${REGISTRY_USERNAME}:${REGISTRY_PASSWORD}" \
     "http://${REGISTRY}/v2/${REPOSITORY}/blobs/${MODEL_BLOB}" \
   | "${SSH[@]}" \
-      "tar -xf - -C '${REMOTE_MODEL_DIR}'"
+      "python3 '${REMOTE_EXTRACTOR}' '${REMOTE_MODEL_DIR}'"
 
   case "${RUNTIME_NAME}" in
 

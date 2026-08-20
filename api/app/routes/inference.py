@@ -43,6 +43,7 @@ from app.services.attachment_context_service import (
     AttachmentContextInvalid,
     AttachmentContextNotFound,
     AttachmentContextService,
+    attachment_context_messages,
 )
 from app.services.catalog_service import (
     CatalogService,
@@ -482,14 +483,10 @@ def chat_completion(
             ) from exc
 
         if attachment_context:
-            messages.insert(
-                0,
-                {
-                    "role": "system",
-                    "content": (
-                        attachment_context
-                    ),
-                },
+            messages[0:0] = (
+                attachment_context_messages(
+                    attachment_context
+                )
             )
 
 

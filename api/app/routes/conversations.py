@@ -22,6 +22,10 @@ from app.db.database import (
     get_db,
 )
 from app.models.user import User
+from app.services.attachment_security_service import (
+    AttachmentSecurityError,
+    AttachmentSecurityService,
+)
 from app.repositories.conversation_repository import (
     AttachmentNotFound,
     ConversationNotFound,
@@ -592,9 +596,15 @@ async def upload_attachment(
         "attachment"
     )
 
-    filename = Path(
-        original_name
-    ).name[:255]
+    try:
+        filename = AttachmentSecurityService.sanitize_filename(
+            original_name
+        )
+    except AttachmentSecurityError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
 
     extension = (
         Path(filename)
@@ -641,10 +651,16 @@ async def upload_attachment(
         content
     ).hexdigest()
 
-    media_type = (
-        file.content_type
-        or "application/octet-stream"
-    )
+    try:
+        media_type = AttachmentSecurityService.validate(
+            filename=filename,
+            content=content,
+        )
+    except AttachmentSecurityError as exc:
+        raise HTTPException(
+            status_code=415,
+            detail=str(exc),
+        ) from exc
 
     try:
         attachment = (

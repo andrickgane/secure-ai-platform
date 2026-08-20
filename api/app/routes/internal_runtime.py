@@ -7,6 +7,7 @@ from fastapi import (
     Depends,
     Header,
     HTTPException,
+    Request,
     status,
 )
 from pydantic import BaseModel, Field
@@ -20,10 +21,68 @@ from app.core.config import (
 from app.db.database import get_db
 
 
+# ==========================================================
+# INTERNAL SERVICE BOUNDARY
+# ==========================================================
+#
+# Internal callbacks must arrive through the Kubernetes
+# ClusterIP Service and must never be reachable through the
+# public api.ai.local ingress.
+#
+# The runtime-activation worker currently calls:
+#
+#   ai-control-plane-internal.ai-system.svc.cluster.local:8080
+#
+# Keep this allowlist intentionally narrow and fail closed.
+# ==========================================================
+
+_INTERNAL_SERVICE_HOSTS = frozenset(
+    {
+        "ai-control-plane-internal",
+        "ai-control-plane-internal.ai-system",
+        "ai-control-plane-internal.ai-system.svc",
+        (
+            "ai-control-plane-internal."
+            "ai-system.svc.cluster.local"
+        ),
+    }
+)
+
+
+def _require_internal_host(
+    request: Request,
+) -> None:
+    raw_host = (
+        request.headers.get("host") or ""
+    ).strip().lower()
+
+    host = raw_host
+
+    if host.startswith("["):
+        # IPv6 literals are deliberately not accepted by the
+        # current internal callback architecture.
+        host = ""
+    elif ":" in host:
+        host = host.split(":", 1)[0]
+
+    host = host.rstrip(".")
+
+    if host not in _INTERNAL_SERVICE_HOSTS:
+        # Deliberately return 404 instead of revealing that an
+        # internal-only endpoint exists.
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not Found",
+        )
+
+
 router = APIRouter(
     prefix="/api/v1/internal/runtime",
     tags=["internal-runtime"],
     include_in_schema=False,
+    dependencies=[
+        Depends(_require_internal_host),
+    ],
 )
 
 
