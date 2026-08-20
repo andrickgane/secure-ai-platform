@@ -1,0 +1,131 @@
+.aiw-stream-cursor {
+  display: inline-block;
+
+  width: 7px;
+  height: 16px;
+
+  margin-left: 3px;
+
+  border-radius: 2px;
+
+  background: #475467;
+
+  vertical-align: -2px;
+
+  animation:
+    aiw-stream-blink
+    0.85s
+    step-end
+    infinite;
+}
+
+
+@keyframes aiw-stream-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
+
+.aiw-streaming-badge {
+  padding: 3px 7px;
+
+  border-radius: 999px;
+
+  background: #ecfdf3;
+
+  color: #027a48 !important;
+
+  font-weight: 700;
+}
+
+
+.aiw-stopped-badge {
+  padding: 3px 7px;
+
+  border-radius: 999px;
+
+  background: #fffaeb;
+
+  color: #b54708 !important;
+
+  font-weight: 700;
+}
+
+
+.aiw-stop-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  padding: 8px 12px;
+
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+
+  background: #fef3f2;
+
+  color: #b42318;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+.aiw-stop-button:hover {
+  background: #fee4e2;
+}
+
+
+.aiw-send-stop {
+  background: #b42318 !important;
+}
+
+
+.aiw-effective-parameters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  margin-top: 12px;
+  padding-top: 10px;
+
+  border-top: 1px solid #f2f4f7;
+}
+
+
+.aiw-effective-parameters span {
+  display: inline-flex;
+  gap: 4px;
+
+  padding: 4px 7px;
+
+  border: 1px solid #eaecf0;
+  border-radius: 6px;
+
+  background: #f9fafb;
+
+  color: #667085;
+
+  font-size: 10px;
+}
+
+
+.aiw-effective-parameters strong {
+  color: #344054;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+
+  font-size: 10px;
+}

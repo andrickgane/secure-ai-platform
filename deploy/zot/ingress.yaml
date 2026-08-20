@@ -15,11 +15,11 @@ spec:
 
   tls:
     - hosts:
-        - registry.secure-ai.local
+        - registry.andrick.local
       secretName: zot-registry-tls
 
   rules:
-    - host: registry.secure-ai.local
+    - host: registry.andrick.local
       http:
         paths:
           - path: /

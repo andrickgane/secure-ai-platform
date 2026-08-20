@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -10,6 +11,19 @@ import {
   getModels,
   getProfiles,
 } from "../api";
+
+
+const RUNTIME_CAPACITIES = [
+  4096,
+  8192,
+  16384,
+  32768,
+];
+
+
+function formatCapacity(value) {
+  return `${value / 1024}K`;
+}
 
 
 export default function Deployments() {
@@ -31,7 +45,67 @@ export default function Deployments() {
       model: "",
       profile: "",
       runtime: "auto",
+      runtime_capacity: "auto",
     });
+
+
+  const selectedProfile =
+    useMemo(
+      () =>
+        profiles.find(
+          (profile) =>
+            profile.id === form.profile
+        ),
+      [
+        profiles,
+        form.profile,
+      ]
+    );
+
+
+  const profileDefaultCapacity =
+    Number(
+      selectedProfile
+        ?.max_model_len ||
+      4096
+    );
+
+
+  const profileMaximumCapacity =
+    Number(
+      selectedProfile
+        ?.limits
+        ?.max_model_len ||
+      profileDefaultCapacity
+    );
+
+
+  const capacityParameters =
+    selectedProfile
+      ?.security
+      ?.overridable_parameters;
+
+
+  const capacityOverrideAllowed =
+    selectedProfile
+      ?.security
+      ?.allow_user_overrides === true &&
+    Array.isArray(
+      capacityParameters
+    ) &&
+    capacityParameters.includes(
+      "runtimeCapacity"
+    );
+
+
+  const availableCapacities =
+    RUNTIME_CAPACITIES.filter(
+      (capacity) =>
+        capacity >=
+          profileDefaultCapacity &&
+        capacity <=
+          profileMaximumCapacity
+    );
 
 
   async function refresh() {
@@ -57,21 +131,27 @@ export default function Deployments() {
       profilesResult
     );
 
-    if (!form.model &&
-        modelsResult.length) {
+    if (
+      !form.model &&
+      modelsResult.length
+    ) {
+      setForm(
+        (current) => ({
+          ...current,
 
-      setForm((current) => ({
-        ...current,
+          model:
+            modelsResult[0].id,
 
-        model:
-          modelsResult[0].id,
+          profile:
+            modelsResult[0]
+              .default_profile ||
+            profilesResult[0]?.id ||
+            "",
 
-        profile:
-          modelsResult[0]
-            .default_profile ||
-          profilesResult[0]?.id ||
-          "",
-      }));
+          runtime_capacity:
+            "auto",
+        })
+      );
     }
   }
 
@@ -86,26 +166,46 @@ export default function Deployments() {
 
     setError("");
 
+    const payload = {
+      ...form,
+
+      runtime_capacity:
+        form.runtime_capacity ===
+        "auto"
+          ? null
+          : Number(
+              form.runtime_capacity
+            ),
+    };
+
     try {
       await createDeployment(
-        form
+        payload
       );
 
-      setForm((current) => ({
-        ...current,
-        name: "",
-      }));
+      setForm(
+        (current) => ({
+          ...current,
+          name: "",
+          runtime_capacity:
+            "auto",
+        })
+      );
 
       await refresh();
 
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.message
+      );
     }
   }
 
 
   async function remove(name) {
-    await deleteDeployment(name);
+    await deleteDeployment(
+      name
+    );
 
     await refresh();
   }
@@ -127,10 +227,10 @@ export default function Deployments() {
           </h2>
 
           <p>
-            Select only the model and
-            workload profile. Runtime
-            selection can be delegated
-            to the platform.
+            Select the model, workload
+            profile and runtime.
+            Capacity remains governed
+            by the selected profile.
           </p>
 
         </div>
@@ -160,12 +260,13 @@ export default function Deployments() {
 
               placeholder="assistant-prod"
 
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  name:
-                    event.target.value,
-                })
+              onChange={
+                (event) =>
+                  setForm({
+                    ...form,
+                    name:
+                      event.target.value,
+                  })
               }
 
               required
@@ -179,12 +280,13 @@ export default function Deployments() {
             <select
               value={form.model}
 
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  model:
-                    event.target.value,
-                })
+              onChange={
+                (event) =>
+                  setForm({
+                    ...form,
+                    model:
+                      event.target.value,
+                  })
               }
             >
 
@@ -211,12 +313,17 @@ export default function Deployments() {
             <select
               value={form.profile}
 
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  profile:
-                    event.target.value,
-                })
+              onChange={
+                (event) =>
+                  setForm({
+                    ...form,
+
+                    profile:
+                      event.target.value,
+
+                    runtime_capacity:
+                      "auto",
+                  })
               }
             >
 
@@ -243,12 +350,14 @@ export default function Deployments() {
             <select
               value={form.runtime}
 
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  runtime:
-                    event.target.value,
-                })
+              onChange={
+                (event) =>
+                  setForm({
+                    ...form,
+
+                    runtime:
+                      event.target.value,
+                  })
               }
             >
 
@@ -264,7 +373,65 @@ export default function Deployments() {
                 vLLM CUDA
               </option>
 
+              <option value="llama-cpp-metal">
+                llama.cpp Metal
+              </option>
+
             </select>
+          </label>
+
+
+          <label>
+            Runtime capacity
+
+            <select
+              value={
+                form.runtime_capacity
+              }
+
+              disabled={
+                !capacityOverrideAllowed
+              }
+
+              onChange={
+                (event) =>
+                  setForm({
+                    ...form,
+
+                    runtime_capacity:
+                      event.target.value,
+                  })
+              }
+            >
+
+              <option value="auto">
+                Auto ({
+                  formatCapacity(
+                    profileDefaultCapacity
+                  )
+                })
+              </option>
+
+              {
+                capacityOverrideAllowed &&
+                availableCapacities.map(
+                  (capacity) => (
+                    <option
+                      key={capacity}
+                      value={capacity}
+                    >
+                      {
+                        formatCapacity(
+                          capacity
+                        )
+                      }
+                    </option>
+                  )
+                )
+              }
+
+            </select>
+
           </label>
 
 
@@ -359,10 +526,11 @@ export default function Deployments() {
 
                 <button
                   className="danger-button"
-                  onClick={() =>
-                    remove(
-                      deployment.name
-                    )
+                  onClick={
+                    () =>
+                      remove(
+                        deployment.name
+                      )
                   }
                 >
                   Delete

@@ -165,9 +165,9 @@ class ModelPromotionService:
             restart_policy="Never",
 
             service_account_name=(
-                "model-ingestion"
+                "model-promotion"
             ),
-
+            automount_service_account_token=False,
             image_pull_secrets=[
                 client.V1LocalObjectReference(
                     name=(

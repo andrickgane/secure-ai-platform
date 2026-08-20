@@ -60,3 +60,4 @@ spec:
       - temperature
       - maxTokens
       - topP
+      - runtimeCapacity

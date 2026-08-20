@@ -7,7 +7,7 @@ spec:
   secretName: zot-registry-tls
 
   dnsNames:
-    - registry.secure-ai.local
+    - registry.andrick.local
 
   issuerRef:
     name: selfsigned-cluster-secure-ai

@@ -1,0 +1,49 @@
+apiVersion: platform.secureai.io/v1alpha1
+kind: AIRuntime
+
+metadata:
+  name: llama-cpp-cuda
+
+spec:
+  displayName: llama.cpp CUDA
+
+  description: >
+    llama.cpp runtime for GGUF inference on NVIDIA GPU workers.
+
+  engine: llama-cpp
+  deploymentMode: kubernetes
+
+  compatibility:
+    artifactFormats:
+      - gguf
+
+    quantizations:
+      - Q2_K
+      - Q3_K_M
+      - Q4_K_M
+      - Q5_K_M
+      - Q6_K
+      - Q8_0
+      - F16
+      - F32
+
+  hardware:
+    accelerator: nvidia
+    resourceName: nvidia.com/gpu
+    gpuCount: 1
+
+  scheduling:
+    nodeSelector:
+      accelerator: nvidia
+
+  capabilities:
+    - chat
+    - text-generation
+    - reasoning
+    - streaming
+
+  priority: 100
+
+  security:
+    approved: true
+    internetRequired: false

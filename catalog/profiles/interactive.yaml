@@ -1,12 +1,16 @@
 apiVersion: platform.secureai.io/v1alpha1
 kind: AIProfile
+
 metadata:
   name: interactive
+
 spec:
   displayName: Interactive
+
   description: >
     Profil généraliste pour chat interactif avec une latence faible,
     des réponses courtes à moyennes et une consommation maîtrisée.
+
   category: interactive
 
   defaults:
@@ -21,6 +25,7 @@ spec:
     requests:
       cpu: 500m
       memory: 1Gi
+
     limits:
       cpu: "2"
       memory: 4Gi
@@ -34,17 +39,24 @@ spec:
   runtimePolicy:
     preferredRuntimes:
       - vllm-cuda
+      - llama-cpp-cuda
       - vllm-metal
+      - llama-cpp-metal
+
     allowedRuntimes:
-      - vllm-metal
       - vllm-cuda
+      - llama-cpp-cuda
+      - vllm-metal
+      - llama-cpp-metal
 
   limits:
     maxModelLen: 8192
     maxTokens: 2048
+
     temperature:
       min: 0.0
       max: 1.0
+
     topP:
       min: 0.1
       max: 1.0
@@ -52,12 +64,15 @@ spec:
   inference:
     streaming: true
     timeoutSeconds: 120
+
     concurrency:
       maxRequests: 4
 
   security:
     allowUserOverrides: true
+
     overridableParameters:
       - temperature
       - maxTokens
       - topP
+      - runtimeCapacity

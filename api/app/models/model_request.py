@@ -3,9 +3,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
 )
@@ -51,6 +53,34 @@ class ModelRequest(Base):
 
     purpose: Mapped[str | None] = mapped_column(
         Text,
+        nullable=True,
+    )
+
+    artifact_patterns: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
+
+    download_complete_repository: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    artifact_format: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        index=True,
+    )
+
+    architecture: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    quantization: Mapped[str | None] = mapped_column(
+        String(100),
         nullable=True,
     )
 

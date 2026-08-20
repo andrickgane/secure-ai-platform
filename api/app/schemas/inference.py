@@ -29,7 +29,23 @@ class ChatCompletionRequest(BaseModel):
         min_length=1,
     )
 
-    # Advanced profile-governed overrides.
+    # ======================================================
+    # CONVERSATION / ATTACHMENTS
+    # ======================================================
+
+    conversation_id: int | None = Field(
+        default=None,
+        ge=1,
+    )
+
+    attachment_ids: list[int] = Field(
+        default_factory=list,
+        max_length=8,
+    )
+
+    # ======================================================
+    # PROFILE-GOVERNED OVERRIDES
+    # ======================================================
 
     temperature: float | None = None
 

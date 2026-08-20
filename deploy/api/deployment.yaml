@@ -1,124 +1,301 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: ai-control-plane
   namespace: ai-system
+
   labels:
     app.kubernetes.io/name: ai-control-plane
     app.kubernetes.io/component: control-plane
     app.kubernetes.io/part-of: ai-platform
+
 spec:
   replicas: 1
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0
       maxSurge: 1
+
   selector:
     matchLabels:
       app.kubernetes.io/name: ai-control-plane
+
   template:
     metadata:
       labels:
         app.kubernetes.io/name: ai-control-plane
         app.kubernetes.io/component: control-plane
         app.kubernetes.io/part-of: ai-platform
+
     spec:
-      hostAliases:
-      - ip: 192.0.2.203
-        hostnames:
-        - registry.secure-ai.local
       serviceAccountName: ai-control-plane
-      imagePullSecrets:
-      - name: zot-regcred
       automountServiceAccountToken: true
+
+      imagePullSecrets:
+        - name: zot-regcred
+
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
         runAsGroup: 10001
         fsGroup: 10001
+
+        seccompProfile:
+          type: RuntimeDefault
+
+      # ======================================================
+      # DATABASE MIGRATION
+      # ======================================================
+
       initContainers:
-      - name: database-migration
-        image: registry.secure-ai.local:5000/ai-platform/control-plane:v1.0.1
-        imagePullPolicy: Always
-        command:
-        - alembic
-        - upgrade
-        - head
-        envFrom:
-        - secretRef:
-            name: ai-control-plane-secrets
-        env:
-        - name: ACP_ENVIRONMENT
-          value: kubernetes
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-        volumeMounts:
-        - name: tmp
-          mountPath: /tmp
+
+        - name: database-migration
+
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.34
+          imagePullPolicy: Always
+
+          command:
+            - alembic
+            - upgrade
+            - head
+
+          envFrom:
+            - secretRef:
+                name: ai-control-plane-secrets
+
+          env:
+            - name: ACP_ENVIRONMENT
+              value: kubernetes
+
+            - name: ACP_MODEL_INGESTION_IMAGE
+              value: registry.andrick.local:31039/ai-platform/model-ingestion:v2.1.0-dev.1
+
+            - name: ACP_MODEL_PROMOTION_IMAGE
+              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.4
+
+            - name: ACP_RUNTIME_ACTIVATION_IMAGE
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.4
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+
+            capabilities:
+              drop:
+                - ALL
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+      # ======================================================
+      # CONTROL PLANE API
+      # ======================================================
+
       containers:
-      - name: api
-        image: registry.secure-ai.local:5000/ai-platform/control-plane:v1.0.1
-        imagePullPolicy: Always
-        ports:
-        - name: http
-          containerPort: 8080
-          protocol: TCP
-        envFrom:
-        - secretRef:
-            name: ai-control-plane-secrets
-        env:
-        - name: ACP_ENVIRONMENT
-          value: kubernetes
-        - name: ACP_KUBERNETES_NAMESPACE
-          value: ai-workloads
-        - name: ACP_KUBERNETES_MODE
-          value: incluster
-        - name: ACP_REGISTRY_INSECURE
-          value: 'true'
-        - name: ACP_JWT_ALGORITHM
-          value: HS256
-        - name: ACP_JWT_ACCESS_TOKEN_MINUTES
-          value: '60'
-        - name: HOME
-          value: /home/appuser
-        resources:
-          requests:
-            cpu: 250m
-            memory: 256Mi
-          limits:
-            cpu: '2'
-            memory: 1Gi
-        readinessProbe:
-          tcpSocket:
-            port: http
-          initialDelaySeconds: 3
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 6
-        livenessProbe:
-          tcpSocket:
-            port: http
-          initialDelaySeconds: 20
-          periodSeconds: 10
-          timeoutSeconds: 2
-          failureThreshold: 3
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-        volumeMounts:
-        - name: tmp
-          mountPath: /tmp
-        - name: sigstore-cache
-          mountPath: /home/appuser/.sigstore
+
+        - name: api
+
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.34
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # ==================================================
+          # APPLICATION SECRETS
+          # ==================================================
+
+          envFrom:
+            - secretRef:
+                name: ai-control-plane-secrets
+
+          env:
+
+            # -----------------------------------------------
+            # Platform environment
+            # -----------------------------------------------
+
+            - name: ACP_ENVIRONMENT
+              value: kubernetes
+
+            - name: ACP_KUBERNETES_NAMESPACE
+              value: ai-workloads
+
+            - name: ACP_KUBERNETES_MODE
+              value: incluster
+
+            # -----------------------------------------------
+            # Registry
+            #
+            # LAB ONLY.
+            # Will be disabled once Zot TLS trust is fully
+            # migrated.
+            # -----------------------------------------------
+
+            - name: ACP_REGISTRY_INSECURE
+              value: "true"
+
+            - name: ACP_REGISTRY_PLAIN_HTTP
+              value: "true"
+
+            - name: ACP_REGISTRY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: trusted-registry-credentials
+                  key: ACP_REGISTRY_USERNAME
+
+            - name: ACP_REGISTRY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trusted-registry-credentials
+                  key: ACP_REGISTRY_PASSWORD
+
+            # -----------------------------------------------
+            # Cosign trusted model verification
+            # -----------------------------------------------
+
+            - name: ACP_COSIGN_PUBLIC_KEY
+              value: /etc/ai-platform/cosign/cosign.pub
+
+            # -----------------------------------------------
+            # Model lifecycle workers
+            # -----------------------------------------------
+
+            - name: ACP_MODEL_INGESTION_IMAGE
+              value: registry.andrick.local:31039/ai-platform/model-ingestion:v2.1.0-dev.1
+
+            - name: ACP_MODEL_PROMOTION_IMAGE
+              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.4
+
+            - name: ACP_RUNTIME_ACTIVATION_IMAGE
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.4
+
+            # -----------------------------------------------
+            # Internal runtime callback
+            # -----------------------------------------------
+
+            - name: ACP_RUNTIME_CALLBACK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ai-control-plane-secrets
+                  key: ACP_RUNTIME_CALLBACK_TOKEN
+
+            # -----------------------------------------------
+            # JWT
+            # -----------------------------------------------
+
+            - name: ACP_JWT_ALGORITHM
+              value: HS256
+
+            - name: ACP_JWT_ACCESS_TOKEN_MINUTES
+              value: "60"
+
+            # -----------------------------------------------
+            # llama.cpp
+            # -----------------------------------------------
+
+            - name: ACP_LLAMA_CPP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-control-plane-secrets
+                  key: ACP_LLAMA_CPP_API_KEY
+                  optional: true
+
+            # -----------------------------------------------
+            # Runtime user
+            # -----------------------------------------------
+
+            - name: HOME
+              value: /home/appuser
+
+          # ==================================================
+          # RESOURCES
+          # ==================================================
+
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+
+            limits:
+              cpu: "2"
+              memory: 1Gi
+
+          # ==================================================
+          # PROBES
+          # ==================================================
+
+          readinessProbe:
+            tcpSocket:
+              port: http
+
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: http
+
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          # ==================================================
+          # CONTAINER SECURITY
+          # ==================================================
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+
+            capabilities:
+              drop:
+                - ALL
+
+          # ==================================================
+          # VOLUMES
+          # ==================================================
+
+          volumeMounts:
+
+            - name: tmp
+              mountPath: /tmp
+
+            - name: sigstore-cache
+              mountPath: /home/appuser/.sigstore
+
+            - name: model-verification-key
+              mountPath: /etc/ai-platform/cosign
+              readOnly: true
+
+            # Historical path retained for compatibility with
+            # trusted-model tooling already built in V1/V2.
+            - name: model-verification-key
+              mountPath: /etc/ai-platform/trust
+              readOnly: true
+
+      # ======================================================
+      # POD VOLUMES
+      # ======================================================
+
       volumes:
-      - name: tmp
-        emptyDir: {}
-      - name: sigstore-cache
-        emptyDir: {}
+
+        - name: tmp
+          emptyDir: {}
+
+        - name: sigstore-cache
+          emptyDir: {}
+
+        - name: model-verification-key
+          secret:
+            secretName: model-verification-key
+            optional: false

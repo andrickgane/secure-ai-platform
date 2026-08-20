@@ -1,4 +1,27 @@
 ARG COSIGN_VERSION=v3.1.2
+ARG TARGETARCH
+
+# ==========================================================
+# WEB UI BUILD
+# ==========================================================
+
+FROM node:22-alpine AS ui-builder
+
+WORKDIR /build/ui
+
+COPY ui/package*.json ./
+
+RUN if [ -f package-lock.json ]; then \
+        npm ci; \
+    else \
+        npm install; \
+    fi
+
+COPY ui/ ./
+
+RUN npm run build
+
+
 
 # ==========================================================
 # COSIGN
@@ -8,6 +31,7 @@ FROM alpine:3.22 AS cosign
 
 ARG COSIGN_VERSION
 ARG TARGETARCH
+
 
 RUN apk add --no-cache \
         ca-certificates \
@@ -96,6 +120,14 @@ COPY api \
 COPY catalog \
     /opt/ai-platform/catalog
 
+# ==========================================================
+# WEB UI
+# ==========================================================
+
+COPY --from=ui-builder \
+    /build/ui/dist \
+    /opt/ai-platform/ui
+
 
 # ==========================================================
 # PERMISSIONS
@@ -112,6 +144,8 @@ RUN chown -R \
 # ==========================================================
 
 USER 10001:10001
+
+ENV ACP_FRONTEND_DIR=/opt/ai-platform/ui
 
 WORKDIR /opt/ai-platform/api
 

@@ -362,7 +362,7 @@ def push_artifact(
         "--artifact-type",
         (
             "application/vnd."
-            "andrick.ai-model.v1"
+            "secureai.model.v1"
         ),
 
         artifact_reference,
@@ -370,7 +370,7 @@ def push_artifact(
         (
             str(package_relative)
             + ":application/vnd."
-            "andrick.ai-model.tar"
+            "secureai.model.tar"
         ),
     ]
 

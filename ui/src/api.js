@@ -63,9 +63,39 @@ export async function apiRequest(
       const payload =
         await response.json();
 
-      message =
-        payload.detail ||
-        message;
+      const detail = payload.detail;
+
+      if (typeof detail === "string") {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message = detail
+          .map((item) => {
+            if (typeof item === "string") {
+              return item;
+            }
+
+            if (item?.msg) {
+              const location = Array.isArray(item.loc)
+                ? item.loc.join(".")
+                : "";
+
+              return location
+                ? `${location}: ${item.msg}`
+                : item.msg;
+            }
+
+            return JSON.stringify(item);
+          })
+          .join("\n");
+      } else if (
+        detail &&
+        typeof detail === "object"
+      ) {
+        message =
+          detail.message ||
+          detail.msg ||
+          JSON.stringify(detail, null, 2);
+      }
     } catch {
       // ignore JSON parsing failure
     }
@@ -116,6 +146,18 @@ export function getDashboard() {
 export function getModels() {
   return apiRequest(
     "/models"
+  );
+}
+
+
+export function deleteModel(
+  modelId
+) {
+  return apiRequest(
+    `/models/${encodeURIComponent(modelId)}`,
+    {
+      method: "DELETE",
+    }
   );
 }
 
@@ -196,5 +238,82 @@ export function getUsers() {
 export function getAudit() {
   return apiRequest(
     "/audit?limit=100"
+  );
+}
+
+
+// ============================================================
+// MODEL REQUESTS
+// ============================================================
+
+export function getModelRequests() {
+  return apiRequest(
+    "/model-requests"
+  );
+}
+
+
+export function createModelRequest(
+  payload
+) {
+  return apiRequest(
+    "/model-requests",
+    {
+      method: "POST",
+
+      body: JSON.stringify(
+        payload
+      ),
+    }
+  );
+}
+
+
+export function updateModelRequestStatus(
+  requestId,
+  payload
+) {
+  return apiRequest(
+    `/model-requests/${requestId}/status`,
+    {
+      method: "PATCH",
+
+      body: JSON.stringify(
+        payload
+      ),
+    }
+  );
+}
+
+
+export function ingestModelRequest(
+  requestId,
+  artifactPatterns = []
+) {
+  return apiRequest(
+    `/model-requests/${requestId}/ingest`,
+    {
+      method: "POST",
+
+      body: JSON.stringify({
+        artifact_patterns: artifactPatterns,
+      }),
+    }
+  );
+}
+
+
+/*
+ * Promotion is exposed by the backend model-request
+ * workflow after administrative approval.
+ */
+export function promoteModelRequest(
+  requestId
+) {
+  return apiRequest(
+    `/model-requests/${requestId}/promote`,
+    {
+      method: "POST",
+    }
   );
 }

@@ -76,6 +76,14 @@ def login(
             settings
             .jwt_access_token_minutes
         ),
+
+        jwt_issuer=(
+            settings.jwt_issuer
+        ),
+
+        jwt_audience=(
+            settings.jwt_audience
+        ),
     )
 
     try:
@@ -93,7 +101,13 @@ def login(
             status_code=(
                 status.HTTP_401_UNAUTHORIZED
             ),
+
             detail=str(exc),
+
+            headers={
+                "WWW-Authenticate":
+                    "Bearer"
+            },
         ) from exc
 
     token, expires_in = (

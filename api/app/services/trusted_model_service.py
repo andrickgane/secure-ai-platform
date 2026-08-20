@@ -300,6 +300,102 @@ class TrustedModelService:
             )
             raise TrustedModelError(f"Cosign OCI verification failed: {error}")
 
+    def delete_manifest(
+        self,
+        registry: str,
+        repository: str,
+        digest: str,
+        *,
+        plain_http: bool | None = None,
+    ) -> bool:
+        """
+        Delete one immutable OCI manifest from the trusted registry.
+
+        Returns:
+            True  -> manifest deleted
+            False -> manifest was already absent
+        """
+        if not isinstance(registry, str) or not registry:
+            raise TrustedModelError("OCI registry is missing")
+
+        if not isinstance(repository, str) or not repository:
+            raise TrustedModelError("OCI repository is missing")
+
+        self._validate_digest(digest)
+
+        if plain_http is None:
+            plain_http = self.registry_plain_http
+
+        scheme = "http" if plain_http else "https"
+
+        request = urllib.request.Request(
+            url=(
+                f"{scheme}://{registry}/v2/"
+                f"{repository}/manifests/{digest}"
+            ),
+            headers={
+                "Accept": OCI_MANIFEST_MEDIA_TYPE,
+            },
+            method="DELETE",
+        )
+
+        auth = self._authorization_header()
+
+        if auth:
+            request.add_header(
+                "Authorization",
+                auth,
+            )
+
+        try:
+            kwargs: dict[str, Any] = {
+                "timeout": 30,
+            }
+
+            if not plain_http:
+                kwargs["context"] = self._ssl_context()
+
+            with urllib.request.urlopen(
+                request,
+                **kwargs,
+            ) as response:
+                if response.status not in {
+                    200,
+                    202,
+                }:
+                    raise TrustedModelError(
+                        "Registry returned unexpected "
+                        f"HTTP {response.status}"
+                    )
+
+            return True
+
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                return False
+
+            messages = {
+                401: "Registry authentication failed",
+                403: "Registry access forbidden",
+                405: "Registry manifest deletion is disabled",
+            }
+
+            raise TrustedModelError(
+                messages.get(
+                    exc.code,
+                    f"Registry returned HTTP {exc.code}",
+                )
+            ) from exc
+
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+        ) as exc:
+            raise TrustedModelError(
+                f"Could not contact registry '{registry}': {exc}"
+            ) from exc
+
+
     def verify(self, artifact: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(artifact, dict):
             raise TrustedModelError("Artifact configuration is missing")

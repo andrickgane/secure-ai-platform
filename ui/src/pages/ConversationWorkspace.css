@@ -1,0 +1,537 @@
+.aiw-layout-conversations {
+  display: grid;
+
+  grid-template-columns:
+    280px minmax(0, 1fr);
+
+  align-items: stretch;
+}
+
+
+.aiw-layout-conversations
+.aiw-workspace {
+  max-width: none;
+  margin: 0;
+
+  min-width: 0;
+}
+
+
+.aiw-conversation-sidebar {
+  min-width: 0;
+
+  min-height:
+    calc(100vh - 110px);
+
+  max-height:
+    calc(100vh - 110px);
+
+  display: flex;
+  flex-direction: column;
+
+  border-right:
+    1px solid #eaecf0;
+
+  background: #fcfcfd;
+}
+
+
+.aiw-conversation-sidebar-header {
+  padding: 20px 16px 14px;
+
+  border-bottom:
+    1px solid #eaecf0;
+}
+
+
+.aiw-conversation-sidebar-header
+strong {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #101828;
+
+  font-size: 15px;
+}
+
+
+.aiw-new-chat-button {
+  width: 100%;
+
+  min-height: 38px;
+
+  margin-top: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  color: #344054;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+.aiw-new-chat-button:hover {
+  background: #f9fafb;
+}
+
+
+.aiw-conversation-list {
+  flex: 1;
+
+  min-height: 0;
+
+  overflow-y: auto;
+
+  padding: 10px;
+}
+
+
+.aiw-conversation-item {
+  width: 100%;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin-bottom: 5px;
+
+  padding: 10px;
+
+  border: 1px solid transparent;
+  border-radius: 9px;
+
+  background: transparent;
+
+  color: #344054;
+
+  text-align: left;
+}
+
+
+.aiw-conversation-item:hover {
+  background: #f2f4f7;
+}
+
+
+.aiw-conversation-item.active {
+  border-color: #d0d5dd;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 1px 2px
+    rgba(16, 24, 40, 0.04);
+}
+
+
+.aiw-conversation-main {
+  min-width: 0;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 8px;
+}
+
+
+.aiw-conversation-main > svg {
+  flex: 0 0 auto;
+
+  margin-top: 2px;
+
+  color: #667085;
+}
+
+
+.aiw-conversation-main > div {
+  min-width: 0;
+}
+
+
+.aiw-conversation-main strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #344054;
+
+  font-size: 11px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.aiw-conversation-main span,
+.aiw-conversation-main small {
+  display: block;
+
+  overflow: hidden;
+
+  margin-top: 3px;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.aiw-conversation-actions {
+  flex: 0 0 auto;
+
+  display: none;
+
+  gap: 4px;
+}
+
+
+.aiw-conversation-item:hover
+.aiw-conversation-actions,
+.aiw-conversation-item.active
+.aiw-conversation-actions {
+  display: flex;
+}
+
+
+.aiw-conversation-actions span {
+  width: 25px;
+  height: 25px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 6px;
+
+  color: #98a2b3;
+}
+
+
+.aiw-conversation-actions span:hover {
+  background: #eaecf0;
+
+  color: #344054;
+}
+
+
+.aiw-conversation-placeholder,
+.aiw-conversation-empty {
+  padding: 24px 12px;
+
+  color: #98a2b3;
+
+  font-size: 10px;
+
+  text-align: center;
+}
+
+
+.aiw-conversation-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 5px;
+}
+
+
+.aiw-conversation-empty svg {
+  margin-bottom: 5px;
+
+  font-size: 20px;
+}
+
+
+.aiw-attachment-row {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 7px;
+
+  padding:
+    10px 32px 0;
+}
+
+
+.aiw-attachment-chip {
+  max-width: 280px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 7px 8px;
+
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+
+  background: #f9fafb;
+
+  color: #344054;
+
+  font-size: 10px;
+}
+
+
+.aiw-attachment-chip > span {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.aiw-attachment-chip small {
+  color: #98a2b3;
+
+  white-space: nowrap;
+}
+
+
+.aiw-attachment-action {
+  width: 23px;
+  height: 23px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 5px;
+
+  background: transparent;
+
+  color: #667085;
+}
+
+
+.aiw-attachment-action:hover {
+  background: #eaecf0;
+}
+
+
+.aiw-composer.aiw-composer-with-attachments {
+  grid-template-columns:
+    auto minmax(0, 1fr) auto;
+}
+
+
+.aiw-attach-button {
+  width: 40px;
+  height: 40px;
+
+  display: grid;
+  place-items: center;
+
+  align-self: end;
+
+  border: 1px solid #d0d5dd;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #475467;
+}
+
+
+.aiw-attach-button:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+
+.aiw-attach-button:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+}
+
+
+.aiw-upload-note {
+  padding:
+    5px 32px 0;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+}
+
+
+@media (
+  max-width: 1050px
+) {
+  .aiw-layout-conversations {
+    grid-template-columns:
+      220px minmax(0, 1fr);
+  }
+}
+
+
+@media (
+  max-width: 760px
+) {
+  .aiw-layout-conversations {
+    display: block;
+  }
+
+
+  .aiw-conversation-sidebar {
+    min-height: auto;
+    max-height: 220px;
+
+    border-right: 0;
+    border-bottom:
+      1px solid #eaecf0;
+  }
+
+
+  .aiw-attachment-row,
+  .aiw-upload-note {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
+
+/* =========================================================
+   CHATGPT-LIKE PENDING ATTACHMENTS
+   ========================================================= */
+
+.aiw-composer-pending {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin:
+    0 32px 8px;
+
+  padding:
+    10px 10px 0;
+
+  border-top:
+    1px solid #f2f4f7;
+}
+
+
+.aiw-composer-pending
+.aiw-attachment-chip {
+  background: #ffffff;
+
+  box-shadow:
+    0 1px 2px
+    rgba(
+      16,
+      24,
+      40,
+      0.04
+    );
+}
+
+
+.aiw-message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-bottom: 10px;
+}
+
+
+.aiw-message-attachment {
+  min-width: 180px;
+  max-width: 320px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  padding: 9px 10px;
+
+  border:
+    1px solid #eaecf0;
+
+  border-radius: 9px;
+
+  background: #f9fafb;
+
+  color: #344054;
+
+  text-align: left;
+}
+
+
+.aiw-message-attachment:hover {
+  border-color: #d0d5dd;
+
+  background: #f2f4f7;
+}
+
+
+.aiw-message-attachment > svg {
+  flex: 0 0 auto;
+
+  color: #667085;
+}
+
+
+.aiw-message-attachment > div {
+  flex: 1;
+
+  min-width: 0;
+}
+
+
+.aiw-message-attachment strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #344054;
+
+  font-size: 10px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.aiw-message-attachment span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #98a2b3;
+
+  font-size: 8px;
+}
+
+
+@media (
+  max-width: 650px
+) {
+  .aiw-composer-pending {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+}

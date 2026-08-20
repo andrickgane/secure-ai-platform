@@ -59,3 +59,4 @@ spec:
     overridableParameters:
       - temperature
       - maxTokens
+      - runtimeCapacity

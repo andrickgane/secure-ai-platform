@@ -1,27 +1,50 @@
 apiVersion: platform.secureai.io/v1alpha1
-kind: Runtime
+kind: AIRuntime
+
 metadata:
   name: vllm-cuda
+
 spec:
   displayName: vLLM CUDA
+
   description: >
-    Runtime vLLM Kubernetes pour worker NVIDIA.
-    Il reste indisponible tant que le cluster n'expose aucun nvidia.com/gpu.
+    Kubernetes vLLM runtime for NVIDIA GPU workers.
+
   engine: vllm
   deploymentMode: kubernetes
+
+  compatibility:
+    artifactFormats:
+      - safetensors
+
+    quantizations:
+      - BF16
+      - FP16
+      - FP32
+      - AWQ
+      - GPTQ
+
   container:
     image: vllm/vllm-openai:v0.26.0
     port: 8000
+
   hardware:
     accelerator: nvidia
     resourceName: nvidia.com/gpu
     gpuCount: 1
+
   scheduling:
     nodeSelector:
       accelerator: nvidia
+
   capabilities:
     - chat
     - text-generation
     - reasoning
+    - streaming
+
+  priority: 100
+
   security:
     approved: true
+    internetRequired: false

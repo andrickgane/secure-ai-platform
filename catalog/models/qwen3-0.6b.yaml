@@ -33,7 +33,7 @@ spec:
   artifact:
     source: oci-registry
 
-    registry: registry.secure-ai.local:5000
+    registry: registry.andrick.local:31039
 
     repository: ai-models-trusted/qwen3-0.6b
 

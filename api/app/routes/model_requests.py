@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_admin
+from app.core.auth import require_platform_admin
 from app.core.config import Settings, get_settings
 from app.db.database import get_db
 from app.models.user import User
@@ -41,20 +41,6 @@ router = APIRouter(
 
 
 # ============================================================
-# AUTHORIZATION
-# ============================================================
-
-
-def require_platform_admin(
-    current_user: User = Depends(require_admin),
-) -> User:
-    """
-    Restrict model-management operations to platform admins.
-    """
-    return current_user
-
-
-# ============================================================
 # CREATE MODEL REQUEST
 # ============================================================
 
@@ -85,6 +71,14 @@ def create_model_request(
             revision=payload.revision,
             requested_profile=payload.requested_profile,
             purpose=payload.purpose,
+
+            artifact_patterns=(
+                payload.artifact_patterns
+            ),
+
+            download_complete_repository=(
+                payload.download_complete_repository
+            ),
             requested_by_user_id=current_user.id,
         )
 
@@ -311,6 +305,23 @@ def ingest_model_request(
         )
 
     # --------------------------------------------------------
+    # ARTIFACT SELECTION SAFETY
+    # --------------------------------------------------------
+
+    if (
+        not model_request.artifact_patterns
+        and not model_request.download_complete_repository
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Model request has no artifact selection. "
+                "Select artifact patterns or explicitly "
+                "allow complete repository ingestion."
+            ),
+        )
+
+    # --------------------------------------------------------
     # INGESTION SERVICE
     # --------------------------------------------------------
 
@@ -318,8 +329,7 @@ def ingest_model_request(
         namespace=settings.kubernetes_namespace,
         kubernetes_mode=settings.kubernetes_mode,
         ingestion_image=(
-            "registry.secure-ai.local:5000/"
-            "ai-platform/model-ingestion:v1.0.0"
+            settings.model_ingestion_image
         ),
         ingestion_secret_name="model-ingestion-secrets",
         workspace_pvc_name="model-ingestion-workspace",
@@ -336,6 +346,10 @@ def ingest_model_request(
             provider=model_request.provider,
             repository=model_request.repository,
             revision=model_request.revision,
+            artifact_patterns=model_request.artifact_patterns,
+            allow_full_snapshot=(
+                model_request.download_complete_repository
+            ),
         )
 
     except ModelIngestionJobAlreadyExists as exc:
@@ -496,8 +510,7 @@ def promote_model_request(
         kubernetes_mode=settings.kubernetes_mode,
 
         promotion_image=(
-            "registry.secure-ai.local:5000/"
-            "ai-platform/model-promotion:v1.0.3"
+            settings.model_promotion_image
         ),
 
         ingestion_secret_name="model-ingestion-secrets",
@@ -570,10 +583,7 @@ def promote_model_request(
             "repository": model_request.repository,
             "revision": model_request.revision,
 
-            "promotion_image": (
-                "registry.secure-ai.local:5000/"
-                "ai-platform/model-promotion:v1.0.3"
-            ),
+            "promotion_image": settings.model_promotion_image,
 
             "registry": (
                 "zot.registry.svc.cluster.local:5000"
