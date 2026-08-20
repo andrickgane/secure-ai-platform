@@ -7,9 +7,15 @@ from kubernetes.client.rest import ApiException
 
 
 class KubernetesService:
-    def __init__(self, namespace: str, mode: str = "kubeconfig") -> None:
+    def __init__(
+        self,
+        namespace: str,
+        mode: str = "kubeconfig",
+        model_puller_image: str | None = None,
+    ) -> None:
         self.namespace = namespace
         self.mode = mode
+        self.model_puller_image = model_puller_image
         if mode == "incluster":
             config.load_incluster_config()
         elif mode == "kubeconfig":
@@ -47,8 +53,8 @@ class KubernetesService:
             "nodes": with_gpu,
         }
 
-    @staticmethod
     def _model_puller(
+        self,
         *,
         artifact: str,
         mount_path: str,
@@ -58,6 +64,11 @@ class KubernetesService:
     ) -> client.V1Container:
         registry = artifact.split("/", 1)[0]
         flag = "--plain-http" if plain_http else "--insecure" if insecure else ""
+
+        if not self.model_puller_image:
+            raise RuntimeError(
+                "Model puller image is not configured"
+            )
 
         script = f"""
 set -eu
@@ -77,8 +88,12 @@ REPORT="$OCI_DOWNLOAD/reports/security-report.json"
 
 test -f "$MODEL_TAR"
 test -f "$REPORT"
-tar -tf "$MODEL_TAR" >/dev/null
-tar -xf "$MODEL_TAR" -C "$MODEL_OUTPUT"
+# Treat archive structure as untrusted input even after
+# OCI trust verification.
+#
+# secure_extract.py rejects traversal, absolute paths,
+# symlinks, hardlinks, devices, FIFOs and special entries.
+python3 /usr/local/lib/ai-platform/secure_extract.py "$MODEL_OUTPUT" < "$MODEL_TAR"
 
 SAFETENSORS_FILE="$(
   find "$MODEL_OUTPUT"     -type f     -name '*.safetensors'     -print -quit
@@ -116,10 +131,7 @@ rm -f "$MODEL_TAR"
 
         return client.V1Container(
             name="model-puller",
-            image=(
-                "registry.andrick.local:31039/"
-                "ai-platform/model-promotion:v2.1.0-dev.4"
-            ),
+            image=self.model_puller_image,
             image_pull_policy="IfNotPresent",
             command=["/bin/sh", "-c"],
             args=[script],

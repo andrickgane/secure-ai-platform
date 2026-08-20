@@ -1,11 +1,9 @@
-ARG COSIGN_VERSION=v3.1.2
-ARG TARGETARCH
 
 # ==========================================================
 # WEB UI BUILD
 # ==========================================================
 
-FROM node:22-alpine AS ui-builder
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS ui-builder
 
 WORKDIR /build/ui
 
@@ -22,36 +20,20 @@ COPY ui/ ./
 RUN npm run build
 
 
-
 # ==========================================================
 # COSIGN
 # ==========================================================
 
-FROM alpine:3.22 AS cosign
-
 ARG COSIGN_VERSION
-ARG TARGETARCH
 
-
-RUN apk add --no-cache \
-        ca-certificates \
-        curl \
-    && case "${TARGETARCH}" in \
-        amd64) COSIGN_ARCH="amd64" ;; \
-        arm64) COSIGN_ARCH="arm64" ;; \
-        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
-    esac \
-    && curl -fsSL \
-        "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-${COSIGN_ARCH}" \
-        -o /cosign \
-    && chmod 0755 /cosign
+FROM ghcr.io/sigstore/cosign/cosign:v3.1.3@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8 AS cosign
 
 
 # ==========================================================
 # AI CONTROL PLANE
 # ==========================================================
 
-FROM python:3.14.6-slim
+FROM python:3.14.6-slim@sha256:7bec7ddcddeff7975d6ba9b4be7dd6f6b2f55e7491539145e2978f7f97ce9144
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -62,10 +44,11 @@ WORKDIR /opt/ai-platform
 
 
 # ==========================================================
-# SYSTEM DEPENDENCIES
+# SYSTEM DEPENDENCIES + SECURITY UPDATES
 # ==========================================================
 
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
@@ -86,7 +69,7 @@ RUN apt-get update \
 # ==========================================================
 
 COPY --from=cosign \
-    /cosign \
+    /ko-app/cosign \
     /usr/local/bin/cosign
 
 RUN chmod 0755 \
@@ -120,6 +103,7 @@ COPY api \
 
 COPY catalog \
     /opt/ai-platform/catalog
+
 
 # ==========================================================
 # WEB UI

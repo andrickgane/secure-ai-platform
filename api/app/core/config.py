@@ -193,17 +193,17 @@ class Settings(BaseSettings):
 
     model_ingestion_image: str = (
         "registry.andrick.local:31039/"
-        "ai-platform/model-ingestion:v2.1.0-dev.1"
+        "ai-platform/model-ingestion:v2.1.0-dev.2"
     )
 
     model_promotion_image: str = (
         "registry.andrick.local:31039/"
-        "ai-platform/model-promotion:v2.1.0-dev.4"
+        "ai-platform/model-promotion:v2.1.0-dev.5"
     )
 
     runtime_activation_image: str = (
         "registry.andrick.local:31039/"
-        "ai-platform/runtime-activation:v2.1.0-dev.4"
+        "ai-platform/runtime-activation:v2.1.0-dev.7"
     )
 
     # ======================================================

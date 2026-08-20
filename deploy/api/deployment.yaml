@@ -54,7 +54,7 @@ spec:
 
         - name: database-migration
 
-          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.36
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.38
           imagePullPolicy: Always
 
           command:
@@ -71,13 +71,13 @@ spec:
               value: kubernetes
 
             - name: ACP_MODEL_INGESTION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/model-ingestion:v2.1.0-dev.1
+              value: registry.andrick.local:31039/ai-platform/model-ingestion:v2.1.0-dev.2
 
             - name: ACP_MODEL_PROMOTION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.4
+              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.5
 
             - name: ACP_RUNTIME_ACTIVATION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.5
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.7
 
           securityContext:
             allowPrivilegeEscalation: false
@@ -99,7 +99,7 @@ spec:
 
         - name: api
 
-          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.36
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.38
           imagePullPolicy: Always
 
           ports:
@@ -168,13 +168,13 @@ spec:
             # -----------------------------------------------
 
             - name: ACP_MODEL_INGESTION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/model-ingestion:v2.1.0-dev.1
+              value: registry.andrick.local:31039/ai-platform/model-ingestion:v2.1.0-dev.2
 
             - name: ACP_MODEL_PROMOTION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.4
+              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.5
 
             - name: ACP_RUNTIME_ACTIVATION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.5
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.7
 
             # -----------------------------------------------
             # Internal runtime callback

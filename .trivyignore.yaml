@@ -1,0 +1,123 @@
+vulnerabilities:
+
+  # ==========================================================
+  # COSIGN v3.1.3 - TEMPORARY UPSTREAM RISK ACCEPTANCE
+  #
+  # Scope:
+  #   usr/local/bin/cosign ONLY
+  #
+  # Package scope:
+  #   Exact Go package + version embedded in the official
+  #   Cosign v3.1.3 binary.
+  #
+  # This prevents older or different Cosign binaries from
+  # inheriting this exception only because they use the same
+  # filesystem path.
+  #
+  # Expiration:
+  #   2026-09-20
+  # ==========================================================
+
+  - id: CVE-2026-56864
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/golang.org/x/mod@v0.37.0
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-56865
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/golang.org/x/mod@v0.37.0
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-56852
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/golang.org/x/text@v0.38.0
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: GHSA-hrxh-6v49-42gf
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/google.golang.org/grpc@v1.82.0
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-33818
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-39821
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-39822
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-46600
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-56853
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-56858
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-56859
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-56860
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."
+
+  - id: CVE-2026-56862
+    paths:
+      - usr/local/bin/cosign
+    purls:
+      - pkg:golang/stdlib@v1.26.4
+    expired_at: 2026-09-20
+    statement: "Temporary exact-package exception for official Cosign v3.1.3."

@@ -100,6 +100,7 @@ def _build_services(
             settings
             .kubernetes_mode
         ),
+        model_puller_image=settings.model_promotion_image,
     )
 
     selector = RuntimeSelectorService(
