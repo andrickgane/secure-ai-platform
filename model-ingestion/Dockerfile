@@ -1,4 +1,4 @@
-FROM python:3.14-slim
+FROM python:3.14.6-slim
 
 ARG TARGETARCH
 ARG GITLEAKS_VERSION=8.30.1
@@ -48,11 +48,12 @@ RUN case "${TARGETARCH}" in \
 # PYTHON
 # ==========================================================
 
-COPY model-ingestion/requirements.txt \
-    /tmp/requirements.txt
+COPY model-ingestion/requirements.lock.txt \
+    /tmp/requirements.lock.txt
 
 RUN pip install \
-    --requirement /tmp/requirements.txt
+    --require-hashes \
+    --requirement /tmp/requirements.lock.txt
 
 
 # ==========================================================

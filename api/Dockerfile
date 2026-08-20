@@ -51,7 +51,7 @@ RUN apk add --no-cache \
 # AI CONTROL PLANE
 # ==========================================================
 
-FROM python:3.14-slim
+FROM python:3.14.6-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -97,12 +97,13 @@ RUN chmod 0755 \
 # PYTHON DEPENDENCIES
 # ==========================================================
 
-COPY api/requirements.txt \
-    /tmp/requirements.txt
+COPY api/requirements.lock.txt \
+    /tmp/requirements.lock.txt
 
 RUN pip install \
+    --require-hashes \
     --no-cache-dir \
-    --requirement /tmp/requirements.txt
+    --requirement /tmp/requirements.lock.txt
 
 
 # ==========================================================

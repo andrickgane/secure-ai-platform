@@ -45,7 +45,7 @@ RUN case "${TARGETARCH}" in \
 # RUNTIME
 # ==========================================================
 
-FROM python:3.14-slim
+FROM python:3.14.6-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -68,11 +68,12 @@ COPY --from=tools \
 
 WORKDIR /opt/model-promotion
 
-COPY model-promotion/requirements.txt \
-  /tmp/requirements.txt
+COPY model-promotion/requirements.lock.txt \
+  /tmp/requirements.lock.txt
 
 RUN pip install \
-  --requirement /tmp/requirements.txt
+    --require-hashes \
+  --requirement /tmp/requirements.lock.txt
 
 COPY model-promotion/worker.py \
   /opt/model-promotion/worker.py
