@@ -1,14 +1,63 @@
 spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
   template:
     spec:
+
       volumes:
         - name: zot-config
           configMap:
             name: zot-config
+
+        - name: zot-internal-tls
+          secret:
+            secretName: zot-internal-tls
+
       containers:
         - name: zot
+
+          startupProbe:
+            httpGet:
+              path: /startupz
+              port: 5000
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 5000
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 5000
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
+
           volumeMounts:
             - name: zot-config
               mountPath: /etc/zot/config.json
               subPath: config.json
+              readOnly: true
+
+            - name: zot-internal-tls
+              mountPath: /etc/zot/tls
               readOnly: true

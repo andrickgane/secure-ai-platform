@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-control-plane-zot-egress
+  namespace: ai-system
+  labels:
+    app.kubernetes.io/name: ai-control-plane
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: ai-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ai-control-plane
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: registry
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: zot
+      ports:
+        - protocol: TCP
+          port: 5000
