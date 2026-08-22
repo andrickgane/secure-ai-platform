@@ -253,6 +253,11 @@ class ModelPromotionService:
                         # ----------------------------------
 
                         client.V1EnvVar(
+                            name="ACP_REGISTRY_CA_FILE",
+                            value="/etc/ai-platform/registry-ca/ca.crt",
+                        ),
+
+                        client.V1EnvVar(
                             name="DOCKER_CONFIG",
                             value="/tmp/docker",
                         ),
@@ -387,6 +392,12 @@ class ModelPromotionService:
                         ),
 
                         client.V1VolumeMount(
+                            name="registry-ca",
+                            mount_path="/etc/ai-platform/registry-ca",
+                            read_only=True,
+                        ),
+
+                        client.V1VolumeMount(
                             name="signing-key",
                             mount_path="/keys",
                             read_only=True,
@@ -420,6 +431,13 @@ class ModelPromotionService:
                     empty_dir=(
                         client
                         .V1EmptyDirVolumeSource()
+                    ),
+                ),
+
+                client.V1Volume(
+                    name="registry-ca",
+                    config_map=client.V1ConfigMapVolumeSource(
+                        name="plateform-ai-registry-ca"
                     ),
                 ),
 

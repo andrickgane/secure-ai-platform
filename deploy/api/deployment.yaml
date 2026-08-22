@@ -54,7 +54,7 @@ spec:
 
         - name: database-migration
 
-          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.38
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.39
           imagePullPolicy: Always
 
           command:
@@ -68,16 +68,22 @@ spec:
 
           env:
             - name: ACP_ENVIRONMENT
-              value: kubernetes
+              value: "production"
+
+            - name: ACP_REGISTRY_INSECURE
+              value: "false"
+
+            - name: ACP_REGISTRY_PLAIN_HTTP
+              value: "false"
 
             - name: ACP_MODEL_INGESTION_IMAGE
               value: registry.andrick.local:31039/ai-platform/model-ingestion:v2.1.0-dev.2
 
             - name: ACP_MODEL_PROMOTION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.5
+              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.6
 
             - name: ACP_RUNTIME_ACTIVATION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.7
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.8
 
           securityContext:
             allowPrivilegeEscalation: false
@@ -99,7 +105,7 @@ spec:
 
         - name: api
 
-          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.38
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.39
           imagePullPolicy: Always
 
           ports:
@@ -122,7 +128,10 @@ spec:
             # -----------------------------------------------
 
             - name: ACP_ENVIRONMENT
-              value: kubernetes
+              value: "production"
+
+            - name: ACP_DOCS_ENABLED
+              value: "false"
 
             - name: ACP_KUBERNETES_NAMESPACE
               value: ai-workloads
@@ -139,10 +148,13 @@ spec:
             # -----------------------------------------------
 
             - name: ACP_REGISTRY_INSECURE
-              value: "true"
+              value: "false"
 
             - name: ACP_REGISTRY_PLAIN_HTTP
-              value: "true"
+              value: "false"
+
+            - name: ACP_REGISTRY_CA_FILE
+              value: /etc/ai-platform/registry-ca/ca.crt
 
             - name: ACP_REGISTRY_USERNAME
               valueFrom:
@@ -171,10 +183,10 @@ spec:
               value: registry.andrick.local:31039/ai-platform/model-ingestion:v2.1.0-dev.2
 
             - name: ACP_MODEL_PROMOTION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.5
+              value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.6
 
             - name: ACP_RUNTIME_ACTIVATION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.7
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.8
 
             # -----------------------------------------------
             # Internal runtime callback
@@ -273,6 +285,10 @@ spec:
             - name: sigstore-cache
               mountPath: /home/appuser/.sigstore
 
+            - name: registry-ca
+              mountPath: /etc/ai-platform/registry-ca
+              readOnly: true
+
             - name: model-verification-key
               mountPath: /etc/ai-platform/cosign
               readOnly: true
@@ -294,6 +310,10 @@ spec:
 
         - name: sigstore-cache
           emptyDir: {}
+
+        - name: registry-ca
+          configMap:
+            name: plateform-ai-registry-ca
 
         - name: model-verification-key
           secret:

@@ -47,6 +47,13 @@ REGISTRY_PASSWORD = os.environ[
     "ACP_REGISTRY_PASSWORD"
 ]
 
+REGISTRY_CA_FILE = Path(
+    os.environ.get(
+        "ACP_REGISTRY_CA_FILE",
+        "/etc/ai-platform/registry-ca/ca.crt",
+    )
+)
+
 
 # ==========================================================
 # PATHS
@@ -293,13 +300,19 @@ def create_package() -> None:
 # ==========================================================
 
 def registry_login() -> None:
+    if not REGISTRY_CA_FILE.is_file():
+        raise RuntimeError(
+            f"Registry CA file not found: {REGISTRY_CA_FILE}"
+        )
+
 
     result = subprocess.run(
         [
             "oras",
             "login",
 
-            "--plain-http",
+            "--ca-file",
+            str(REGISTRY_CA_FILE),
 
             REGISTRY,
 
@@ -357,7 +370,8 @@ def push_artifact(
         "oras",
         "push",
 
-        "--plain-http",
+        "--ca-file",
+        str(REGISTRY_CA_FILE),
 
         "--artifact-type",
         (
@@ -419,7 +433,8 @@ def push_artifact(
                 "manifest",
                 "fetch",
 
-                "--plain-http",
+                "--ca-file",
+                str(REGISTRY_CA_FILE),
 
                 "--descriptor",
 
@@ -478,7 +493,8 @@ def sign_artifact(
 
             "--yes",
 
-            "--allow-insecure-registry",
+            "--registry-cacert",
+            str(REGISTRY_CA_FILE),
 
             "--key",
             str(

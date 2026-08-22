@@ -96,6 +96,10 @@ class RuntimeActivationService:
                 "ACP_RUNTIME_CALLBACK_TOKEN",
             ),
             client.V1EnvVar(
+                name="REGISTRY_CA_FILE",
+                value="/etc/ai-platform/registry-ca/ca.crt",
+            ),
+            client.V1EnvVar(
                 name="CALLBACK_URL",
                 value=(
                     "http://ai-control-plane-internal."
@@ -122,6 +126,11 @@ class RuntimeActivationService:
                 client.V1VolumeMount(
                     name="verification-key",
                     mount_path="/keys",
+                    read_only=True,
+                ),
+                client.V1VolumeMount(
+                    name="registry-ca",
+                    mount_path="/etc/ai-platform/registry-ca",
                     read_only=True,
                 ),
                 client.V1VolumeMount(
@@ -155,6 +164,12 @@ class RuntimeActivationService:
                     name="verification-key",
                     secret=client.V1SecretVolumeSource(
                         secret_name="model-verification-key"
+                    ),
+                ),
+                client.V1Volume(
+                    name="registry-ca",
+                    config_map=client.V1ConfigMapVolumeSource(
+                        name="plateform-ai-registry-ca"
                     ),
                 ),
                 client.V1Volume(

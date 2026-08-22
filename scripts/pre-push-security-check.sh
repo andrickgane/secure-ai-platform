@@ -440,7 +440,15 @@ else
 fi
 
 
-HTTP_CODE="$(
+ROOT_HTTP_CODE="$(
+  curl -k -s \
+    -o /dev/null \
+    -w '%{http_code}' \
+    https://api.ai.local/ \
+  || true
+)"
+
+DOCS_HTTP_CODE="$(
   curl -k -s \
     -o /dev/null \
     -w '%{http_code}' \
@@ -448,13 +456,16 @@ HTTP_CODE="$(
   || true
 )"
 
-if [[ "${HTTP_CODE}" == "200" ]]; then
-
-    pass "API HTTP 200"
-
+if [[ "${ROOT_HTTP_CODE}" == "200" ]]; then
+    pass "API root HTTP 200"
 else
+    fail "API root HTTP=${ROOT_HTTP_CODE}"
+fi
 
-    fail "API HTTP=${HTTP_CODE}"
+if [[ "${DOCS_HTTP_CODE}" == "404" ]]; then
+    pass "API docs hidden in production"
+else
+    fail "API docs HTTP=${DOCS_HTTP_CODE}, expected 404"
 fi
 
 

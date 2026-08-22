@@ -8,7 +8,7 @@ set -Eeuo pipefail
 for variable in \
   DEPLOYMENT_NAME MODEL_ID ARTIFACT_REFERENCE ARTIFACT_DIGEST \
   MAX_MODEL_LEN INFERENCE_ENDPOINT RUNTIME_NAME \
-  REGISTRY_USERNAME REGISTRY_PASSWORD \
+  REGISTRY_USERNAME REGISTRY_PASSWORD REGISTRY_CA_FILE \
   RUNTIME_SSH_USER RUNTIME_SSH_HOST RUNTIME_SSH_PORT \
   REMOTE_MODELS_ROOT CALLBACK_URL CALLBACK_TOKEN
 do
@@ -95,6 +95,7 @@ trap on_error ERR
 [[ "${ARTIFACT_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]]
 [[ "${REMOTE_MODELS_ROOT}" =~ ^/[A-Za-z0-9._/-]+$ ]]
 [[ "${RUNTIME_BIN}" =~ ^/[A-Za-z0-9._/-]+$ ]]
+[[ -r "${REGISTRY_CA_FILE}" ]]
 
 case "${ARTIFACT_REFERENCE}" in
   zot.registry.svc.cluster.local:5000/ai-models-trusted/*@sha256:*) ;;
@@ -167,7 +168,7 @@ SCP=(
 cosign verify \
   --key /keys/cosign.pub \
   --insecure-ignore-tlog \
-  --allow-insecure-registry \
+  --registry-cacert "${REGISTRY_CA_FILE}" \
   --registry-username "${REGISTRY_USERNAME}" \
   --registry-password "${REGISTRY_PASSWORD}" \
   "${ARTIFACT_REFERENCE}" \
@@ -176,7 +177,8 @@ cosign verify \
 curl -fsS --retry 3 \
   -u "${REGISTRY_USERNAME}:${REGISTRY_PASSWORD}" \
   -H 'Accept: application/vnd.oci.image.manifest.v1+json' \
-  "http://${REGISTRY}/v2/${REPOSITORY}/manifests/${ARTIFACT_DIGEST}" \
+  --cacert "${REGISTRY_CA_FILE}" \
+  "https://${REGISTRY}/v2/${REPOSITORY}/manifests/${ARTIFACT_DIGEST}" \
   >/tmp/manifest.json
 
 MANIFEST_DIGEST="$(
@@ -231,7 +233,8 @@ REPORT_BLOB="$(
 
 curl -fsS --retry 3 \
   -u "${REGISTRY_USERNAME}:${REGISTRY_PASSWORD}" \
-  "http://${REGISTRY}/v2/${REPOSITORY}/blobs/${REPORT_BLOB}" \
+  --cacert "${REGISTRY_CA_FILE}" \
+  "https://${REGISTRY}/v2/${REPOSITORY}/blobs/${REPORT_BLOB}" \
   | jq -e . \
   >/tmp/security-report.json
 
@@ -322,7 +325,8 @@ if [[ "${READY_CACHE}" != "1" ]]; then
   curl -fsS \
     --retry 3 \
     -u "${REGISTRY_USERNAME}:${REGISTRY_PASSWORD}" \
-    "http://${REGISTRY}/v2/${REPOSITORY}/blobs/${MODEL_BLOB}" \
+    --cacert "${REGISTRY_CA_FILE}" \
+    "https://${REGISTRY}/v2/${REPOSITORY}/blobs/${MODEL_BLOB}" \
   | "${SSH[@]}" \
       "python3 '${REMOTE_EXTRACTOR}' '${REMOTE_MODEL_DIR}'"
 

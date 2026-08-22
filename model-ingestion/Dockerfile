@@ -101,7 +101,7 @@ RUN mkdir -p /out \
 RUN set -eu; \
     mkdir -p /tmp/gitleaks-canary; \
     printf '%s\n' \
-        'token = "ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"' \
+        'token = "ghp_aBcDeFgHiJkLmNoPqR''sTuVwXyZ0123456789"' \
         > /tmp/gitleaks-canary/secret.txt; \
     set +e; \
     /out/gitleaks detect \

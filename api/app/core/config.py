@@ -198,12 +198,12 @@ class Settings(BaseSettings):
 
     model_promotion_image: str = (
         "registry.andrick.local:31039/"
-        "ai-platform/model-promotion:v2.1.0-dev.5"
+        "ai-platform/model-promotion:v2.1.0-dev.6"
     )
 
     runtime_activation_image: str = (
         "registry.andrick.local:31039/"
-        "ai-platform/runtime-activation:v2.1.0-dev.7"
+        "ai-platform/runtime-activation:v2.1.0-dev.8"
     )
 
     # ======================================================

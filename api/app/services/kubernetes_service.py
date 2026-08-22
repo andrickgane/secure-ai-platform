@@ -61,9 +61,14 @@ class KubernetesService:
         secret_name: str,
         plain_http: bool,
         insecure: bool,
+        ca_file: str,
     ) -> client.V1Container:
         registry = artifact.split("/", 1)[0]
-        flag = "--plain-http" if plain_http else "--insecure" if insecure else ""
+        if plain_http or insecure:
+            raise RuntimeError(
+                "Insecure Registry transport is disabled "
+                "for the model puller"
+            )
 
         if not self.model_puller_image:
             raise RuntimeError(
@@ -75,11 +80,13 @@ set -eu
 mkdir -p "$DOCKER_CONFIG" "$OCI_DOWNLOAD" "$MODEL_OUTPUT"
 
 printf '%s' "$REGISTRY_PASSWORD" | oras login \
-  {flag} "$REGISTRY_HOST" \
+  --ca-file "$REGISTRY_CA_FILE" \
+  "$REGISTRY_HOST" \
   --username "$REGISTRY_USERNAME" \
   --password-stdin
 
-oras pull {flag} \
+oras pull \
+  --ca-file "$REGISTRY_CA_FILE" \
   --output "$OCI_DOWNLOAD" \
   "$MODEL_ARTIFACT_REFERENCE"
 
@@ -142,6 +149,10 @@ rm -f "$MODEL_TAR"
                 client.V1EnvVar(name="MODEL_OUTPUT", value=mount_path),
                 client.V1EnvVar(name="OCI_DOWNLOAD", value="/tmp/oci"),
                 client.V1EnvVar(name="REGISTRY_HOST", value=registry),
+                client.V1EnvVar(
+                    name="REGISTRY_CA_FILE",
+                    value=ca_file,
+                ),
                 client.V1EnvVar(name="HOME", value="/tmp/oras-home"),
                 client.V1EnvVar(
                     name="DOCKER_CONFIG", value="/tmp/oras-home/.docker"
@@ -152,6 +163,11 @@ rm -f "$MODEL_TAR"
             volume_mounts=[
                 client.V1VolumeMount(
                     name="model-storage", mount_path=mount_path
+                ),
+                client.V1VolumeMount(
+                    name="registry-ca",
+                    mount_path="/etc/ai-platform/registry-ca",
+                    read_only=True,
                 ),
                 client.V1VolumeMount(
                     name="oras-home", mount_path="/tmp/oras-home"
@@ -231,8 +247,9 @@ rm -f "$MODEL_TAR"
         node_selector: dict[str, str] | None = None,
         model_mount_path: str = "/models/model",
         registry_secret_name: str = "model-ingestion-secrets",
-        registry_insecure: bool = True,
-        registry_plain_http: bool = True,
+        registry_insecure: bool = False,
+        registry_plain_http: bool = False,
+        registry_ca_file: str = "/etc/ai-platform/registry-ca/ca.crt",
         model_storage_size: str = "70Gi",
     ) -> client.V1Deployment:
         labels = {
@@ -247,6 +264,7 @@ rm -f "$MODEL_TAR"
             secret_name=registry_secret_name,
             plain_http=registry_plain_http,
             insecure=registry_insecure,
+            ca_file=registry_ca_file,
         )
         runtime = self._runtime_container(
             image=image,
@@ -273,6 +291,12 @@ rm -f "$MODEL_TAR"
                     name="model-storage",
                     empty_dir=client.V1EmptyDirVolumeSource(
                         size_limit=model_storage_size
+                    ),
+                ),
+                client.V1Volume(
+                    name="registry-ca",
+                    config_map=client.V1ConfigMapVolumeSource(
+                        name="plateform-ai-registry-ca"
                     ),
                 ),
                 client.V1Volume(
