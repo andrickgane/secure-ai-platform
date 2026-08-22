@@ -54,7 +54,7 @@ spec:
 
         - name: database-migration
 
-          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.39
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.40
           imagePullPolicy: Always
 
           command:
@@ -105,7 +105,7 @@ spec:
 
         - name: api
 
-          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.39
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.40
           imagePullPolicy: Always
 
           ports:

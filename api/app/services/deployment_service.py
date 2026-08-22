@@ -247,7 +247,6 @@ class DeploymentService:
                         row.revision
                     ),
 
-                    "plainHttp": True,
 
                     "signature": {
                         "required": True,
