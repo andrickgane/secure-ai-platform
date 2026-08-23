@@ -1,0 +1,214 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ai-platform-runtime
+  namespace: monitoring
+  labels:
+    release: ai-monitoring
+    app.kubernetes.io/name: ai-platform
+    app.kubernetes.io/component: observability
+    app.kubernetes.io/part-of: ai-platform
+spec:
+  groups:
+    - name: plateform-ai.availability
+      interval: 30s
+      rules:
+        - alert: AIControlPlaneDown
+          expr: |
+            (
+              max(
+                up{
+                  namespace="ai-system",
+                  service="ai-control-plane"
+                }
+              )
+              or vector(0)
+            ) < 1
+          for: 2m
+          labels:
+            severity: critical
+            component: control-plane
+            platform: plateform-ai
+          annotations:
+            summary: Plateform AI Control Plane is unavailable
+            description: >-
+              Prometheus has been unable to scrape the Plateform AI
+              Control Plane for at least 2 minutes.
+
+        - alert: AINoReadyDeployment
+          expr: |
+            (
+              sum(
+                plateform_ai_deployments{
+                  status="ready"
+                }
+              )
+              or vector(0)
+            ) < 1
+          for: 5m
+          labels:
+            severity: critical
+            component: runtime
+            platform: plateform-ai
+          annotations:
+            summary: No AI deployment is ready
+            description: >-
+              Plateform AI has had no deployment in ready state
+              for at least 5 minutes.
+
+        - alert: AILLamaCppRuntimeDown
+          expr: |
+            (
+              (
+                max(
+                  up{
+                    namespace="ai-workloads",
+                    service="llm-runtime",
+                    endpoint="llama-cpp"
+                  }
+                )
+                or vector(0)
+              ) < 1
+            )
+            and on()
+            (
+              (
+                sum(
+                  plateform_ai_deployments{
+                    runtime=~"llama-cpp.*",
+                    status="ready"
+                  }
+                )
+                or vector(0)
+              ) > 0
+            )
+          for: 2m
+          labels:
+            severity: critical
+            component: llama-cpp
+            platform: plateform-ai
+          annotations:
+            summary: Active llama.cpp runtime is unavailable
+            description: >-
+              A llama.cpp deployment is marked ready by the Control Plane,
+              but its Prometheus target has been unavailable for at least
+              2 minutes.
+
+    - name: plateform-ai.performance
+      interval: 30s
+      rules:
+        - alert: AIStreamingTTFTHigh
+          expr: |
+            (
+              (
+                sum by (runtime) (
+                  increase(
+                    plateform_ai_stream_ttft_milliseconds_sum[15m]
+                  )
+                )
+                /
+                clamp_min(
+                  sum by (runtime) (
+                    increase(
+                      plateform_ai_stream_ttft_milliseconds_count[15m]
+                    )
+                  ),
+                  1
+                )
+              ) > 2000
+            )
+            and on(runtime)
+            (
+              sum by (runtime) (
+                increase(
+                  plateform_ai_stream_ttft_milliseconds_count[15m]
+                )
+              ) >= 5
+            )
+            and on(runtime)
+            (
+              sum by (runtime) (
+                plateform_ai_deployments{
+                  status="ready"
+                }
+              ) > 0
+            )
+          for: 5m
+          labels:
+            severity: warning
+            component: inference
+            platform: plateform-ai
+          annotations:
+            summary: AI streaming TTFT is high
+            description: >-
+              Runtime {{ $labels.runtime }} has averaged more than
+              2000 ms time-to-first-token over recent streaming
+              inference requests.
+
+        - alert: AIStreamingLatencyHigh
+          expr: |
+            (
+              (
+                sum by (runtime) (
+                  increase(
+                    plateform_ai_stream_latency_milliseconds_sum[15m]
+                  )
+                )
+                /
+                clamp_min(
+                  sum by (runtime) (
+                    increase(
+                      plateform_ai_stream_latency_milliseconds_count[15m]
+                    )
+                  ),
+                  1
+                )
+              ) > 20000
+            )
+            and on(runtime)
+            (
+              sum by (runtime) (
+                increase(
+                  plateform_ai_stream_latency_milliseconds_count[15m]
+                )
+              ) >= 5
+            )
+            and on(runtime)
+            (
+              sum by (runtime) (
+                plateform_ai_deployments{
+                  status="ready"
+                }
+              ) > 0
+            )
+          for: 5m
+          labels:
+            severity: warning
+            component: inference
+            platform: plateform-ai
+          annotations:
+            summary: AI streaming latency is high
+            description: >-
+              Runtime {{ $labels.runtime }} has averaged more than
+              20 seconds end-to-end latency over recent streaming
+              inference requests.
+
+        - alert: AILLamaRequestsDeferred
+          expr: |
+            max_over_time(
+              llamacpp:requests_deferred{
+                namespace="ai-workloads",
+                service="llm-runtime"
+              }[5m]
+            ) > 0
+          for: 2m
+          labels:
+            severity: warning
+            component: llama-cpp
+            platform: plateform-ai
+          annotations:
+            summary: llama.cpp is deferring inference requests
+            description: >-
+              The active llama.cpp runtime has deferred requests,
+              indicating queue pressure or insufficient inference
+              capacity.
