@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ai-platform-llama-cpp
+  namespace: ai-workloads
+  labels:
+    app.kubernetes.io/name: llm-runtime
+    app.kubernetes.io/component: observability
+    app.kubernetes.io/part-of: ai-platform
+spec:
+  serviceDiscoveryRole: EndpointSlice
+
+  namespaceSelector:
+    matchNames:
+      - ai-workloads
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm-runtime
+      app.kubernetes.io/component: inference-runtime
+      app.kubernetes.io/part-of: ai-platform
+
+  endpoints:
+    - port: llama-cpp
+      path: /metrics
+      scheme: http
+      interval: 15s
+      scrapeTimeout: 10s
+      authorization:
+        type: Bearer
+        credentials:
+          name: runtime-activation-config
+          key: LLAMA_CPP_API_KEY

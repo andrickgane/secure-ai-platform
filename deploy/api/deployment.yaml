@@ -54,7 +54,7 @@ spec:
 
         - name: database-migration
 
-          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.40
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.41
           imagePullPolicy: Always
 
           command:
@@ -83,7 +83,7 @@ spec:
               value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.6
 
             - name: ACP_RUNTIME_ACTIVATION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.8
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.9
 
           securityContext:
             allowPrivilegeEscalation: false
@@ -105,7 +105,7 @@ spec:
 
         - name: api
 
-          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.40
+          image: registry.andrick.local:31039/ai-platform/control-plane:v2.1.0-dev.41
           imagePullPolicy: Always
 
           ports:
@@ -186,7 +186,7 @@ spec:
               value: registry.andrick.local:31039/ai-platform/model-promotion:v2.1.0-dev.6
 
             - name: ACP_RUNTIME_ACTIVATION_IMAGE
-              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.8
+              value: registry.andrick.local:31039/ai-platform/runtime-activation:v2.1.0-dev.9
 
             # -----------------------------------------------
             # Internal runtime callback

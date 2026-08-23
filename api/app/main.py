@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import asyncio
+from contextlib import (
+    asynccontextmanager,
+    suppress,
+)
+
 from fastapi import (
     FastAPI,
     Request,
@@ -8,7 +14,6 @@ from fastapi import (
 from app.core.config import (
     get_settings,
 )
-
 from app.routes import audit
 from app.routes import auth
 from app.routes import catalog
@@ -19,13 +24,50 @@ from app.routes import health
 from app.routes import inference
 from app.routes import inference_stream
 from app.routes import internal_runtime
+from app.routes import metrics
 from app.routes import model_requests
-from app.routes import profiles
 from app.routes import profile_clones
+from app.routes import profiles
 from app.routes import users
+from app.services.runtime_reconciliation_service import (
+    RuntimeReconciliationService,
+)
 
 
 settings = get_settings()
+
+
+# ==========================================================
+# LIFESPAN
+# ==========================================================
+
+
+@asynccontextmanager
+async def lifespan(
+    app: FastAPI,
+):
+    del app
+
+    reconciliation_task = (
+        asyncio.create_task(
+            RuntimeReconciliationService
+            .run_forever(
+                settings=settings,
+                interval_seconds=15,
+            )
+        )
+    )
+
+    try:
+        yield
+
+    finally:
+        reconciliation_task.cancel()
+
+        with suppress(
+            asyncio.CancelledError
+        ):
+            await reconciliation_task
 
 
 # ==========================================================
@@ -65,6 +107,8 @@ app = FastAPI(
         if settings.expose_api_docs
         else None
     ),
+
+    lifespan=lifespan,
 )
 
 
@@ -78,7 +122,6 @@ async def add_security_headers(
     request: Request,
     call_next,
 ):
-
     response = await call_next(
         request
     )
@@ -128,6 +171,8 @@ async def add_security_headers(
             .startswith(
                 "/api/"
             )
+            or request.url.path
+            == "/metrics"
         ):
             response.headers.setdefault(
                 "Cache-Control",
@@ -153,6 +198,10 @@ async def add_security_headers(
 
 app.include_router(
     health.router
+)
+
+app.include_router(
+    metrics.router
 )
 
 app.include_router(
@@ -219,7 +268,9 @@ app.include_router(
 # ==========================================================
 
 
-from app.frontend import mount_frontend
+from app.frontend import (
+    mount_frontend,
+)
 
 mount_frontend(
     app

@@ -203,7 +203,7 @@ class Settings(BaseSettings):
 
     runtime_activation_image: str = (
         "registry.andrick.local:31039/"
-        "ai-platform/runtime-activation:v2.1.0-dev.8"
+        "ai-platform/runtime-activation:v2.1.0-dev.9"
     )
 
     # ======================================================

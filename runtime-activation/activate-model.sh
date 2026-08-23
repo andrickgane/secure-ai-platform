@@ -524,6 +524,7 @@ nohup env \
   --alias "${MODEL_ID}" \
   --ctx-size "${MAX_MODEL_LEN}" \
   --n-gpu-layers 99 \
+  --metrics \
   --no-webui \
   >"${LOG_FILE}" 2>&1 </dev/null &
 

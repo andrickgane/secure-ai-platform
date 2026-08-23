@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+
+metadata:
+  name: ai-platform-control-plane
+  namespace: ai-system
+
+  labels:
+    app.kubernetes.io/name: ai-control-plane
+    app.kubernetes.io/component: observability
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+  namespaceSelector:
+    matchNames:
+      - ai-system
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-control-plane
+      app.kubernetes.io/component: control-plane
+      app.kubernetes.io/part-of: ai-platform
+
+  endpoints:
+    - port: http
+      path: /metrics
+      scheme: http
+      interval: 15s
+      scrapeTimeout: 10s
+
+      authorization:
+        type: Bearer
+        credentials:
+          name: ai-control-plane-secrets
+          key: ACP_RUNTIME_CALLBACK_TOKEN

@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: ai-control-plane-prometheus-ingress
+  namespace: ai-system
+
+  labels:
+    app.kubernetes.io/name: ai-control-plane
+    app.kubernetes.io/component: observability
+    app.kubernetes.io/part-of: ai-platform
+
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ai-control-plane
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+
+      ports:
+        - protocol: TCP
+          port: 8080

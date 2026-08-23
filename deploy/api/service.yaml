@@ -8,6 +8,7 @@ metadata:
   labels:
     app.kubernetes.io/name: ai-control-plane
     app.kubernetes.io/component: control-plane
+    app.kubernetes.io/part-of: ai-platform
 
 spec:
   type: ClusterIP
@@ -16,7 +17,6 @@ spec:
     app.kubernetes.io/name: ai-control-plane
 
   ports:
-
     - name: http
       protocol: TCP
       port: 8080
